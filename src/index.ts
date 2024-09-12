@@ -13,7 +13,7 @@ app.use(express.json());
 
 app.use(cors<Request>());
 
-
+app.use("/v1/user", userRouter);
 
 app.get("/", async (req: Request, res: Response) => {
     try {
