@@ -1,7 +1,7 @@
 import nacl from "tweetnacl";
 import { PrismaClient } from "@prisma/client";
 import { Router } from "express";
-
+import jwt from "jsonwebtoken"
 
 import { JWT_SECRET, TOTAL_DECIMALS } from "../config";
 import { authMiddleware } from "../middleware";
@@ -9,19 +9,13 @@ import { authMiddleware } from "../middleware";
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 
-const connection = new Connection(process.env.RPC_URL ?? "");
+// const connection = new Connection(process.env.RPC_URL ?? "");
 
-const PARENT_WALLET_ADDRESS = "2KeovpYvrgpziaDsq8nbNMP4mc48VNBVXb5arbqrg9Cq";
+// const PARENT_WALLET_ADDRESS = "2KeovpYvrgpziaDsq8nbNMP4mc48VNBVXb5arbqrg9Cq";
 
-const DEFAULT_TITLE = "Select the most clickable thumbnail";
+// const DEFAULT_TITLE = "Select the most clickable thumbnail";
 
-const s3Client = new S3Client({
-    credentials: {
-        accessKeyId: process.env.ACCESS_KEY_ID ?? "",
-        secretAccessKey: process.env.ACCESS_SECRET ?? "",
-    },
-    region: "us-east-1"
-})
+
 
 const router = Router();
 
@@ -103,74 +97,74 @@ router.post("/task", authMiddleware, async (req, res) => {
     // validate the inputs from the user;
     const body = req.body;
 
-    // const parseData = createTaskInput.safeParse(body);
+    // const body = createTaskInput.safeParse(body);
+console.log({body})
+    // const user = await prismaClient.user.findFirst({
+    //     where: {
+    //         id: userId
+    //     }
+    // })
 
-    const user = await prismaClient.user.findFirst({
-        where: {
-            id: userId
-        }
-    })
+    // // if (!body.success) {
+    // //     return res.status(411).json({
+    // //         message: "You've sent the wrong inputs"
+    // //     })
+    // // }
 
-    // if (!parseData.success) {
+    // const transaction = await connection.getTransaction(body.data.signature, {
+    //     maxSupportedTransactionVersion: 1
+    // });
+
+    // console.log(transaction);
+
+    // if ((transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0) !== 100000000) {
     //     return res.status(411).json({
-    //         message: "You've sent the wrong inputs"
+    //         message: "Transaction signature/amount incorrect"
     //     })
     // }
 
-    const transaction = await connection.getTransaction(parseData.data.signature, {
-        maxSupportedTransactionVersion: 1
-    });
+    // if (transaction?.transaction.message.getAccountKeys().get(1)?.toString() !== PARENT_WALLET_ADDRESS) {
+    //     return res.status(411).json({
+    //         message: "Transaction sent to wrong address"
+    //     })
+    // }
 
-    console.log(transaction);
+    // if (transaction?.transaction.message.getAccountKeys().get(0)?.toString() !== user?.address) {
+    //     return res.status(411).json({
+    //         message: "Transaction sent to wrong address"
+    //     })
+    // }
+    // // was this money paid by this user address or a different address?
 
-    if ((transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0) !== 100000000) {
-        return res.status(411).json({
-            message: "Transaction signature/amount incorrect"
-        })
-    }
+    // // parse the signature here to ensure the person has paid 0.1 SOL
+    // // const transaction = Transaction.from(body.data.signature);
 
-    if (transaction?.transaction.message.getAccountKeys().get(1)?.toString() !== PARENT_WALLET_ADDRESS) {
-        return res.status(411).json({
-            message: "Transaction sent to wrong address"
-        })
-    }
+    // let response = await prismaClient.$transaction(async tx => {
 
-    if (transaction?.transaction.message.getAccountKeys().get(0)?.toString() !== user?.address) {
-        return res.status(411).json({
-            message: "Transaction sent to wrong address"
-        })
-    }
-    // was this money paid by this user address or a different address?
+    //     const response = await tx.task.create({
+    //         data: {
+    //             title: body.data.title ?? DEFAULT_TITLE,
+    //             amount: 0.1 * TOTAL_DECIMALS,
+    //             //TODO: Signature should be unique in the table else people can reuse a signature
+    //             signature: body.data.signature,
+    //             user_id: userId
+    //         }
+    //     });
 
-    // parse the signature here to ensure the person has paid 0.1 SOL
-    // const transaction = Transaction.from(parseData.data.signature);
+    //     // await tx.option.createMany({
+    //     //     data: body.data.options.map(x => ({
+    //     //         image_url: x.imageUrl,
+    //     //         task_id: response.id
+    //     //     }))
+    //     // })
 
-    let response = await prismaClient.$transaction(async tx => {
+    //     return response;
 
-        const response = await tx.task.create({
-            data: {
-                title: parseData.data.title ?? DEFAULT_TITLE,
-                amount: 0.1 * TOTAL_DECIMALS,
-                //TODO: Signature should be unique in the table else people can reuse a signature
-                signature: parseData.data.signature,
-                user_id: userId
-            }
-        });
+    // })
 
-        await tx.option.createMany({
-            data: parseData.data.options.map(x => ({
-                image_url: x.imageUrl,
-                task_id: response.id
-            }))
-        })
-
-        return response;
-
-    })
-
-    res.json({
-        id: response.id
-    })
+    // res.json({
+    //     id: response.id
+    // })
 
 })
 
@@ -210,7 +204,7 @@ router.post("/signin", async (req, res) => {
             message: "Incorrect signature"
         })
     }
-
+    console.log({result})
     const existingUser = await prismaClient.user.findFirst({
         where: {
             address: publicKey
@@ -221,7 +215,7 @@ router.post("/signin", async (req, res) => {
         const token = jwt.sign({
             userId: existingUser.id
         }, JWT_SECRET)
-
+        console.log({ token })
         res.json({
             token
         })
@@ -235,11 +229,12 @@ router.post("/signin", async (req, res) => {
         const token = jwt.sign({
             userId: user.id
         }, JWT_SECRET)
-
+console.log({token})
         res.json({
             token
         })
     }
+    
 });
 
 export default router;
