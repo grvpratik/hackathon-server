@@ -1,5 +1,5 @@
 import nacl from "tweetnacl";
-import { PrismaClient } from "@prisma/client";
+import { Platforms, PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import jwt from "jsonwebtoken"
 
@@ -19,77 +19,42 @@ import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 
 const router = Router();
 
-const prismaClient = new PrismaClient();
 
 
-prismaClient.$transaction(
-    async (prisma) => {
-        // Code running in a transaction...
-    },
-    {
-        maxWait: 5000, // default: 2000
-        timeout: 10000, // default: 5000
-    }
-)
+router.get("/task", async (req, res) => {
+    console.log("task")
+    // await prismaClient.task.findMany({
+    //     where: {
+    //         user_id:1
+    //     }
+    // })
 
-// router.get("/task", authMiddleware, async (req, res) => {
-//     // @ts-ignore
-//     const taskId: string = req.query.taskId;
-//     // @ts-ignore
-//     const userId: string = req.userId;
-
-//     const taskDetails = await prismaClient.task.findFirst({
-//         where: {
-//             user_id: Number(userId),
-//             id: Number(taskId)
+//    const user= await prismaClient.user.create({
+//         data: {
+//             address: '0x1234567890123456789012345678901234567893', // Example Ethereum address
 //         },
-//         include: {
-//             options: true
-//         }
 //     })
 
-//     if (!taskDetails) {
-//         return res.status(411).json({
-//             message: "You dont have access to this task"
-//         })
-//     }
-
-//     // Todo: Can u make this faster?
-//     const responses = await prismaClient.submission.findMany({
-//         where: {
-//             task_id: Number(taskId)
+    // console.log('Created user:', user)
+//     const task = await prismaClient.task.create({
+//         data: {
+//             platform: Platforms.Twitter,
+//             task_name: 'Share our latest blog post',
+//             amount: 1000000000, // 1 SOL in lamports
+//             signature: 'dummy_signature_12323',
+//             user_id: 2,
 //         },
-//         include: {
-//             option: true
-//         }
-//     });
-
-//     const result: Record<string, {
-//         count: number;
-//         option: {
-//             imageUrl: string
-//         }
-//     }> = {};
-
-//     taskDetails.options.forEach(option => {
-//         result[option.id] = {
-//             count: 0,
-//             option: {
-//                 imageUrl: option.image_url
-//             }
-//         }
 //     })
-
-//     responses.forEach(r => {
-//         result[r.option_id].count++;
-//     });
-
-//     res.json({
-//         result,
-//         taskDetails
-//     })
-
-// })
+//     const user = await prismaClient.user.findMany()
+//     console.log(user)
+// // const task  = await prismaClient.task.findMany()
+    //     console.log('Created task:', task)
+    // const worker = await prismaClient.worker.findMany()
+    // console.log({worker})
+    // const tasks = await prismaClient.task.findMany();
+    // res.json({tasks})
+    res.send("hii")
+})
 
 router.post("/task", authMiddleware, async (req, res) => {
     //@ts-ignore
@@ -189,51 +154,51 @@ console.log({body})
 // })
 
 router.post("/signin", async (req, res) => {
-    const { publicKey, signature } = req.body;
-    const message = new TextEncoder().encode("Sign into mechanical turks");
+//     const { publicKey, signature } = req.body;
+//     const message = new TextEncoder().encode("Sign into mechanical turks");
 
-    const result = nacl.sign.detached.verify(
-        message,
-        new Uint8Array(signature.data),
-        new PublicKey(publicKey).toBytes(),
-    );
+//     const result = nacl.sign.detached.verify(
+//         message,
+//         new Uint8Array(signature.data),
+//         new PublicKey(publicKey).toBytes(),
+//     );
 
 
-    if (!result) {
-        return res.status(411).json({
-            message: "Incorrect signature"
-        })
-    }
-    console.log({result})
-    const existingUser = await prismaClient.user.findFirst({
-        where: {
-            address: publicKey
-        }
-    })
+//     if (!result) {
+//         return res.status(411).json({
+//             message: "Incorrect signature"
+//         })
+//     }
+//     console.log({result})
+//     const existingUser = await prismaClient.user.findFirst({
+//         where: {
+//             address: publicKey
+//         }
+//     })
 
-    if (existingUser) {
-        const token = jwt.sign({
-            userId: existingUser.id
-        }, JWT_SECRET)
-        console.log({ token })
-        res.json({
-            token
-        })
-    } else {
-        const user = await prismaClient.user.create({
-            data: {
-                address: publicKey,
-            }
-        })
+//     if (existingUser) {
+//         const token = jwt.sign({
+//             userId: existingUser.id
+//         }, JWT_SECRET)
+//         console.log({ token })
+//         res.json({
+//             token
+//         })
+//     } else {
+//         const user = await prismaClient.user.create({
+//             data: {
+//                 address: publicKey,
+//             }
+//         })
 
-        const token = jwt.sign({
-            userId: user.id
-        }, JWT_SECRET)
-console.log({token})
-        res.json({
-            token
-        })
-    }
+//         const token = jwt.sign({
+//             userId: user.id
+//         }, JWT_SECRET)
+// console.log({token})
+//         res.json({
+//             token
+//         })
+//     }
     
 });
 

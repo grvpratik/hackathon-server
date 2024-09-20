@@ -13,58 +13,73 @@ datasource db {
   url      = env("DATABASE_URL")
 }
 
-
-
-model User {
-  id            Int     @id @default(autoincrement())
-  address       String  @unique
-  tasks         Task[]
-  payouts       Payouts[]
+model Payer {
+  id      String       @id @default(uuid())
+   telegram_id       BigInt @unique
+  first_name      String?
+  Last_name      String?
+  address String?    @unique
+  tasks   Task[]
+  payouts Payouts[]
 }
 
-model Worker {
-  id                  Int     @id @default(autoincrement())
-  address             String  @unique
-  submissions         Submission[]
-  pending_amount      Int    // amount in lamports (* 10^9)
-  locked_amount       Int
+model User {
+  id             String         @id @default(uuid())
+  telegram_id       BigInt @unique
+  first_name      String?
+  last_name      String?
+  address        String?       @unique
+  submissions    Submission[]
+  referral_code   String?
+  ref_claim        Boolean? @default(false)
+  referral_by   String?
+  points         Int @default(0)
+  locked_points    Int
+  last_checked    DateTime?
+  createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
 model Task {
-  id           Int       @id @default(autoincrement())
-  platform      Platforms
-  task_name      String
-amount Int
-signature String
+  id       String       @id @default(uuid())
+  platform  Platforms
+  task_name String
+  amount    Int
+  signature String
+comment String?
+task_link String
+  payer_id String
 
-  
-  user_id      Int
+ 
+  payer        Payer         @relation(fields: [payer_id], references: [id])
+  submissions Submission[]
 
-   done         Boolean @default(false)
-  user         User    @relation(fields: [user_id], references: [id])
-   submissions  Submission[]
+status     TaskStatus?
+endDate        DateTime? 
+    createdAt        DateTime           @default(now())
+  updatedAt        DateTime           @updatedAt
 }
 
-
-
 model Submission {
-  id         Int     @id @default(autoincrement())
-  worker_id  Int
-  worker     Worker @relation(fields: [worker_id], references: [id])
-  
-  task_id    Int
-  task       Task   @relation(fields: [task_id], references: [id])
-  amount     Int
-  @@unique([worker_id, task_id])
+  id        String    @id @default(uuid())
+  user_id String
+  user    User @relation(fields: [user_id], references: [id])
+
+  task_id String
+  task    Task @relation(fields: [task_id], references: [id])
+  amount  Int
+proof   String
+
+  @@unique([user_id, task_id])
 }
 
 model Payouts {
-  id            Int     @id @default(autoincrement())
-  user_id       Int
-  user          User    @relation(fields: [user_id], references: [id])
-  amount        Int
-  signature     String
-  status        TxnStatus
+  id        String       @id @default(uuid())
+  payer_id   String
+ payer     Payer      @relation(fields: [payer_id], references: [id])
+  amount    Int
+  signature String
+  status    TxnStatus
 }
 
 enum TxnStatus {
@@ -72,10 +87,14 @@ enum TxnStatus {
   Success
   Failure
 }
-
-enum Platforms{
-  Twitter
-  Youtube
-  Discord
-  Telegram
+enum TaskStatus{
+  Active
+  Hold
+  End
+}
+enum Platforms {
+  twitter
+  youtube
+  discord
+  telegram
 }
