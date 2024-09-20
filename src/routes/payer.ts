@@ -5,8 +5,21 @@ import { Request, Response, Router } from "express";
 import axios, { AxiosError } from 'axios';
 import { Platforms, TaskStatus } from "@prisma/client";
 import { authMiddleware } from '../middleware';
-import { PublicKey } from '@solana/web3.js';
+
 import nacl from 'tweetnacl';
+
+
+import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+
+const connection = new Connection(process.env.RPC_URL ?? "");
+
+const PARENT_WALLET_ADDRESS = "j1oAbxxiDUWvoHxEDhWE7THLjEkDQW2cSHYn2vttxTF";
+
+
+
+
+
+
 
 const router = Router();
 
@@ -490,5 +503,63 @@ router.post("/wallet",authMiddleware, async (req: Request, res: Response) => {
     }
    
 
+})
+
+router.post("/task", authMiddleware, async (req, res) => {
+
+    // @ts-ignore
+    const taskId: string = req.taskId;
+    //@ts-ignore
+    const userId = req.userId
+    const { signature } = req.body;
+    const user = await prisma.payer.findFirst({
+        where: {
+            id: userId
+        }
+    })
+    if (!signature) {
+        res.json({ message: "signature missing" }).status(403)
+        
+    }
+    const transaction = await connection.getTransaction(signature, {
+        maxSupportedTransactionVersion: 1
+    });
+
+    console.log(transaction);
+
+    if ((transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0) !== 100000000) {
+        return res.status(411).json({
+            message: "Transaction signature/amount incorrect"
+        })
+    }
+
+    if (transaction?.transaction.message.getAccountKeys().get(1)?.toString() !== PARENT_WALLET_ADDRESS) {
+        return res.status(411).json({
+            message: "Transaction sent to wrong address"
+        })
+    }
+
+    if (transaction?.transaction.message.getAccountKeys().get(0)?.toString() !== user?.address) {
+        return res.status(411).json({
+            message: "Transaction sent to wrong address"
+        })
+    }
+    // was this money paid by this user address or a different address?
+
+    // parse the signature here to ensure the person has paid 0.1 SOL
+    // const transactionParsed = Transaction.from(signature);
+
+
+    const taskStatus = await prisma.task.update({
+        where: {
+            id: taskId
+        }, data: {
+            signature: signature,
+            status: TaskStatus.Active
+            
+        }
+    })
+    console.log({ taskStatus })
+    res.json({message:"transation added success"}).status(200)
 })
 export default router;
