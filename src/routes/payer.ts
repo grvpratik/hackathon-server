@@ -1,11 +1,28 @@
+import * as jose from 'jose'
 
 import { prisma } from "..";
 import { Request, Response, Router } from "express";
 import axios, { AxiosError } from 'axios';
 import { Platforms, TaskStatus } from "@prisma/client";
+import { authMiddleware } from '../middleware';
+import { PublicKey } from '@solana/web3.js';
+import nacl from 'tweetnacl';
 
 const router = Router();
 
+export const secret = new TextEncoder().encode(
+    'cc7e0d44fd473002f1c42167459001140ec6389b7353f8088f4d9a95f2f596f2'
+)
+const BASE_URL ="https://twa-lake.vercel.app/payment"
+async function createPaymentToken(payerId: string, taskId: string) {
+    const jwt = await new jose.SignJWT({ payerId, taskId })
+        .setProtectedHeader({ alg: 'HS256' })
+        .setIssuedAt()
+        .setExpirationTime('2h')
+        .sign(secret)
+
+    return jwt
+}
 // Define types and enums
 enum Platform {
     YOUTUBE = 'youtube',
@@ -87,9 +104,9 @@ async function createTask(
     signature: string,
     taskLink: string,
     endDate: Date,
-    
+
     comment?: string,
-    
+
 ) {
     try {
         const task = await prisma.task.create({
@@ -101,7 +118,7 @@ async function createTask(
                 task_link: taskLink,
                 comment,
                 payer_id: payerId,
-                status: TaskStatus.Active,
+                status: TaskStatus.Hold,
                 endDate// Set the initial status to Active
             },
         });
@@ -122,7 +139,7 @@ async function handleUserConfirmation(
     signature: string,
     taskLink: string,
     comment?: string,
-    
+
 ) {
     try {
         // First, check if the payer exists
@@ -134,11 +151,12 @@ async function handleUserConfirmation(
             throw new Error('Payer not found');
         }
 
-        // If payer exists, create the task
-        const endDate= new Date()
-        const task = await createTask(payerId, platform, taskName, amount, signature, taskLink,endDate, comment);
+
+        const endDate = new Date()
+        const task = await createTask(payerId, platform, taskName, amount, signature, taskLink, endDate, comment);
         console.log('Task created on user confirmation:', task);
-        return task;
+        const token = await createPaymentToken(payerId, task.id)
+        return { task, token };
     } catch (error) {
         console.error('Error handling user confirmation:', error);
         throw error;
@@ -396,15 +414,16 @@ router.post("/create", async (req: Request, res: Response) => {
                             const taskName = userState.platformAction?.action
                             const amount = userState.price
                             const taskLink = userState.url
-                            const signature = "sample signature"
+                            const signature = ""
                             if (platform && taskName && amount && taskLink) {
-                                await handleUserConfirmation(payerId, platform, taskName, amount, taskLink, signature);
+                               const {token}= await handleUserConfirmation(payerId, platform, taskName, amount, taskLink, signature);
 
-                                await sendMessage(chatId, `Order confirmed! Thank you for your purchase.  Platform: ${userState.platformAction?.platform}
+                                await sendMessage(chatId, `Order Saved. Kindly pay through below link  Platform: ${userState.platformAction?.platform}
                      
                        Action: ${userState.platformAction?.action}
                        URL: ${userState.url}
-                       Price: $${userState.price}`);
+                       Price: $${userState.price}
+                       Payment link:${BASE_URL}?token=${token}`);
                             }
                         } catch (error) {
                             await sendMessage(chatId, "Order Creation failed!")
@@ -430,5 +449,46 @@ router.post("/create", async (req: Request, res: Response) => {
 });
 
 
+router.post("/wallet",authMiddleware, async (req: Request, res: Response) => { 
+    // @ts-ignore
+    const payerId: string = req.payerId;
+    // // @ts-ignore
+    // const taskId: string = req.taskId;
+    try {
+         const { signature, publicKey } = req.body;
+    const message = new TextEncoder().encode("Sign into mechanical turks");
 
+    const result = nacl.sign.detached.verify(
+        message,
+        new Uint8Array(signature.data),
+        new PublicKey(publicKey).toBytes(),
+    );
+
+
+    if (!result) {
+        return res.status(411).json({
+            message: "Incorrect signature"
+        })
+    }
+    const payer = await prisma.payer.findFirst({
+        where: {
+            id:payerId
+        }
+    })
+    if (payer) {
+        await prisma.payer.update({
+            where: {
+                id:payerId
+            }, data: {
+                address:publicKey
+            }
+        })
+    }
+        res.json({message:"success"}).status(200)
+    } catch (error) {
+        res.json({message:"failed adding wallet address"}).status(403)
+    }
+   
+
+})
 export default router;
