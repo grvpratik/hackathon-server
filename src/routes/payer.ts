@@ -11,7 +11,7 @@ import nacl from 'tweetnacl';
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 
-const connection = new Connection(process.env.RPC_URL ?? "");
+const connection = new Connection(process.env.RPC_URL ?? "https://api.devnet.solana.com");
 
 const PARENT_WALLET_ADDRESS = "j1oAbxxiDUWvoHxEDhWE7THLjEkDQW2cSHYn2vttxTF";
 
@@ -26,7 +26,7 @@ const router = Router();
 export const secret = new TextEncoder().encode(
     'cc7e0d44fd473002f1c42167459001140ec6389b7353f8088f4d9a95f2f596f2'
 )
-const BASE_URL ="https://twa-lake.vercel.app/payment"
+const BASE_URL = "https://twa-lake.vercel.app/payment"
 async function createPaymentToken(payerId: string, taskId: string) {
     const jwt = await new jose.SignJWT({ payerId, taskId })
         .setProtectedHeader({ alg: 'HS256' })
@@ -236,7 +236,15 @@ function getInitialKeyboard() {
         },
     };
 }
+function getListKeyboard() {
+    return {
+        reply_markup: {
+            inline_keyboard: [
 
+            ],
+        },
+    };
+}
 function getPlatformActionKeyboard(platform: Platform) {
     switch (platform) {
         case Platform.YOUTUBE:
@@ -330,23 +338,61 @@ router.post("/create", async (req: Request, res: Response) => {
                 if (command === 'start') {
                     userStates.set(chatId, { state: State.INITIAL });
                     await sendMessage(chatId, "Hi! Choose a Platform:", getInitialKeyboard());
+                } else if (command === 'list') {
+                    await sendMessage(chatId, "Here are the list of Tasks: ");
+                    const userFound = await prisma.payer.findUnique({
+                        where: {
+                            telegram_id: chatId
+                        }
+                    })
+                    if (!userFound) {
+                        await sendMessage(chatId, "User not found. ❌ ");
+
+                    }
+                    const taskList = await prisma.task.findMany({
+                        where: {
+                            payer_id: userFound?.id
+                        }
+                    })
+                    if (!taskList) {
+                        await sendMessage(chatId, "Task not found. ❌ ");
+                    }
+                    taskList.map(async (x) => {
+                        const taskMessage = `
+                                                📌 *Task Name*: _${x.task_name}_
+                                                🖥️ *Platform*: ${ x.platform}
+                                                💰 *Amount*: $${x.amount} 
+                                                🔗 *Link*: ${x.signature ? `[Click here](${x.signature})` : 'No link provided'}
+                                                ⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x.status}
+                                                 `.replace(/\./g, '\\.');  
+
+                        await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
+                    });
+
                 } else {
                     await sendMessage(chatId, "Unknown command.");
                 }
             } else {
-                const userState = userStates.get(chatId);
-                if (userState && userState.state === State.URL_REQUIRED && userState.platformAction) {
-                    console.log("inside validation")
-                    if (validateUrl(text, userState.platformAction.platform)) {
-                        console.log("validate url", userState)
-                        userState.url = text;
-                        userState.state = State.PRICING;
-                        userStates.set(chatId, userState);
-                        await sendMessage(chatId, "URL validated. Choose a price:", getPricingKeyboard());
-                    } else {
-                        await sendMessage(chatId, "Invalid URL. Please try again with a valid URL for the selected platform.");
+                try {
+                    const userState = userStates.get(chatId);
+                    if (userState && userState.state === State.URL_REQUIRED && userState.platformAction) {
+                        console.log("inside validation")
+                        if (validateUrl(text, userState.platformAction.platform)) {
+                            console.log("validate url", userState)
+                            userState.url = text;
+                            userState.state = State.PRICING;
+                            userStates.set(chatId, userState);
+                            await sendMessage(chatId, "URL validated. Choose a price:", getPricingKeyboard());
+                        } else {
+                            await sendMessage(chatId, "Invalid URL. Please try again with a valid URL for the selected platform.");
+                        }
                     }
+                } catch (error) {
+                    console.error(error)
+                    await sendMessage(chatId, "Error occured while processing url try again");
                 }
+
+
             }
         }
 
@@ -429,7 +475,7 @@ router.post("/create", async (req: Request, res: Response) => {
                             const taskLink = userState.url
                             const signature = ""
                             if (platform && taskName && amount && taskLink) {
-                               const {token}= await handleUserConfirmation(payerId, platform, taskName, amount, taskLink, signature);
+                                const { token } = await handleUserConfirmation(payerId, platform, taskName, amount, signature, taskLink,);
 
                                 await sendMessage(chatId, `Order Saved. Kindly pay through below link  Platform: ${userState.platformAction?.platform}
                      
@@ -462,104 +508,138 @@ router.post("/create", async (req: Request, res: Response) => {
 });
 
 
-router.post("/wallet",authMiddleware, async (req: Request, res: Response) => { 
+router.post("/wallet", authMiddleware, async (req: Request, res: Response) => {
     // @ts-ignore
     const payerId: string = req.payerId;
-    // // @ts-ignore
-    // const taskId: string = req.taskId;
+    // @ts-ignore
+    console.log(req.payerId)
+
+    // Check if payerId is defined
+    if (!payerId) {
+        return res.status(400).json({ message: "Payer ID is required" });
+    }
+
     try {
-         const { signature, publicKey } = req.body;
-    const message = new TextEncoder().encode("Sign into mechanical turks");
+        const { signature, publicKey } = req.body;
+        console.log({ signature, publicKey });
+        const message = new TextEncoder().encode("Sign into mechanical turks");
 
-    const result = nacl.sign.detached.verify(
-        message,
-        new Uint8Array(signature.data),
-        new PublicKey(publicKey).toBytes(),
-    );
+        const result = nacl.sign.detached.verify(
+            message,
+            new Uint8Array(signature.data),
+            new PublicKey(publicKey).toBytes(),
+        );
 
-
-    if (!result) {
-        return res.status(411).json({
-            message: "Incorrect signature"
-        })
-    }
-    const payer = await prisma.payer.findFirst({
-        where: {
-            id:payerId
+        console.log({ result });
+        if (!result) {
+            return res.status(411).json({
+                message: "Incorrect signature",
+            });
         }
-    })
-    if (payer) {
-        await prisma.payer.update({
-            where: {
-                id:payerId
-            }, data: {
-                address:publicKey
-            }
-        })
-    }
-        res.json({message:"success"}).status(200)
-    } catch (error) {
-        res.json({message:"failed adding wallet address"}).status(403)
-    }
-   
 
-})
+        const payer = await prisma.payer.findFirst({
+            where: {
+                id: payerId,
+            },
+        });
+        console.log({ payer });
+
+        try {
+            const updated = await prisma.payer.update({
+                where: {
+                    id: payerId,
+                },
+                data: {
+                    address: publicKey,
+                },
+            });
+            console.log({ updated });
+
+            // Send success response here
+            return res.status(200).json({ message: "Success" });
+        } catch (error) {
+            console.error(error)
+            // Send wallet update failed response if error occurs
+            return res.status(403).json({ message: "Wallet update failed" });
+        }
+
+    } catch (error) {
+        // Send failure response for adding wallet address
+        return res.status(403).json({ message: "Failed adding wallet address" });
+    }
+});
+
 
 router.post("/task", authMiddleware, async (req, res) => {
+    try {
+        // Extract taskId and userId from req object (set in authMiddleware)
+        // @ts-ignore
+        const taskId: string = req.taskId;
+        // @ts-ignore
+        const userId = req.userId;
+        const { signature } = req.body;
 
-    // @ts-ignore
-    const taskId: string = req.taskId;
-    //@ts-ignore
-    const userId = req.userId
-    const { signature } = req.body;
-    const user = await prisma.payer.findFirst({
-        where: {
-            id: userId
+        // Early check for missing signature
+        if (!signature) {
+            return res.status(403).json({ message: "Signature missing" });
         }
-    })
-    if (!signature) {
-        res.json({ message: "signature missing" }).status(403)
-        
-    }
-    const transaction = await connection.getTransaction(signature, {
-        maxSupportedTransactionVersion: 1
-    });
 
-    console.log(transaction);
+        // Fetch the user based on userId
+        const user = await prisma.payer.findFirst({
+            where: { id: userId }
+        });
 
-    if ((transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0) !== 100000000) {
-        return res.status(411).json({
-            message: "Transaction signature/amount incorrect"
-        })
-    }
-
-    if (transaction?.transaction.message.getAccountKeys().get(1)?.toString() !== PARENT_WALLET_ADDRESS) {
-        return res.status(411).json({
-            message: "Transaction sent to wrong address"
-        })
-    }
-
-    if (transaction?.transaction.message.getAccountKeys().get(0)?.toString() !== user?.address) {
-        return res.status(411).json({
-            message: "Transaction sent to wrong address"
-        })
-    }
-    // was this money paid by this user address or a different address?
-
-    // parse the signature here to ensure the person has paid 0.1 SOL
-    // const transactionParsed = Transaction.from(signature);
-
-
-    const taskStatus = await prisma.task.update({
-        where: {
-            id: taskId
-        }, data: {
-            signature: signature,
-            status: TaskStatus.Active
-            
+        // Early return if user not found
+        if (!user) {
+            return res.status(404).json({ message: "User not found" });
         }
-    })
-    console.log({ taskStatus })
-    res.json({message:"transation added success"}).status(200)
-})
+
+        // Fetch the transaction from the Solana network
+        const transaction = await connection.getTransaction(signature, {
+            maxSupportedTransactionVersion: 1
+        });
+
+        // Early return if the transaction is null
+        if (!transaction) {
+            return res.status(404).json({ message: "Transaction not found" });
+        }
+
+        console.log(transaction);
+
+        // Check if the amount transferred matches 0.1 SOL (100000000 lamports)
+        const transferredAmount = (transaction?.meta?.postBalances[1] ?? 0) - (transaction?.meta?.preBalances[1] ?? 0);
+        if (transferredAmount !== 100000000) {
+            return res.status(411).json({ message: "Transaction signature/amount incorrect" });
+        }
+
+        // Check if the recipient is the correct parent wallet address
+        const recipientAddress = transaction?.transaction.message.getAccountKeys().get(1)?.toString();
+        if (recipientAddress !== PARENT_WALLET_ADDRESS) {
+            return res.status(411).json({ message: "Transaction sent to wrong address" });
+        }
+
+        // Check if the sender matches the user's wallet address
+        const senderAddress = transaction?.transaction.message.getAccountKeys().get(0)?.toString();
+        if (senderAddress !== user.address) {
+            return res.status(411).json({ message: "Transaction sent from wrong address" });
+        }
+
+        // Update task status and store the transaction signature in the database
+        const taskStatus = await prisma.task.update({
+            where: { id: taskId },
+            data: {
+                signature: signature,
+                status: TaskStatus.Active,  // Assuming "ACTIVE" is the correct status in your schema
+            },
+        });
+
+        console.log({ taskStatus });
+
+        // Return success response
+        return res.status(200).json({ message: "Transaction added successfully", taskStatus });
+    } catch (error) {
+        console.error("Error processing task:", error);
+        return res.status(500).json({ message: "Internal server error" });
+    }
+});
 export default router;
