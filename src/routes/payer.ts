@@ -506,7 +506,9 @@ router.post("/create", async (req: Request, res: Response) => {
         res.status(500).json({ error: 'Server error' });
     }
 });
-
+router.get("/create", async (req: Request, res: Response) => { 
+    res.status(200).json({message:"create route ok "})
+})
 
 router.post("/wallet", authMiddleware, async (req: Request, res: Response) => {
     // @ts-ignore
