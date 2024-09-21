@@ -3,7 +3,7 @@ import { Platforms, PrismaClient } from "@prisma/client";
 import { Router } from "express";
 import jwt from "jsonwebtoken"
 
-import { JWT_SECRET, TOTAL_DECIMALS } from "../config";
+
 import { authMiddleware } from "../middleware";
 
 

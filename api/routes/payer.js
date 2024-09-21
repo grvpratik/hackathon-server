@@ -569,6 +569,12 @@ router.post("/task", middleware_1.authMiddleware, (req, res) => __awaiter(void 0
             return res.status(411).json({ message: "Transaction sent from wrong address" });
         }
         // Update task status and store the transaction signature in the database
+        const duplicateSignature = yield __1.prisma.task.findFirst({
+            where: { signature: signature, },
+        });
+        if (duplicateSignature) {
+            return res.status(302).json({ message: "No Duplicate transation" });
+        }
         const taskStatus = yield __1.prisma.task.update({
             where: { id: taskId },
             data: {

@@ -627,6 +627,13 @@ router.post("/task", authMiddleware, async (req, res) => {
         }
 
         // Update task status and store the transaction signature in the database
+        const duplicateSignature = await prisma.task.findFirst({
+            where: { signature: signature, },
+          
+        });
+        if (duplicateSignature) {
+            return res.status(302).json({ message: "No Duplicate transation" });
+        }
         const taskStatus = await prisma.task.update({
             where: { id: taskId },
             data: {
