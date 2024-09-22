@@ -359,15 +359,17 @@ router.post("/create", async (req: Request, res: Response) => {
                     }
                     taskList.map(async (x) => {
                         const taskMessage = `
-                                                📌 *Task Name*: _${x.task_name}_
-                                                🖥️ *Platform*: ${ x.platform}
-                                                💰 *Amount*: $${x.amount} 
-                                                🔗 *Link*: ${x.signature ? `[Click here](${x.signature})` : 'No link provided'}
-                                                ⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x.status}
-                                                 `.replace(/\./g, '\\.');  
+        📌 *Task Name*: _${x.task_name}_ \n
+        🖥️ *Platform*: ${x.platform} \n
+        💰 *Amount*: $${x.amount} \n
+        🔗 *Link*: ${x.task_link ? `[Click here](${x.task_link})` : 'No link provided'} \n
+        💵 *Payment* ${x.signature ? `✅ Done`:`❌ Not done \n`}
+        ⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x.status}
+    `.replace(/\./g, '\\.');
 
                         await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
                     });
+
 
                 } else {
                     await sendMessage(chatId, "Unknown command.");
@@ -434,10 +436,10 @@ router.post("/create", async (req: Request, res: Response) => {
                     userStates.set(chatId, userState);
 
                     // Prepare and send a confirmation message with order details
-                    const confirmationMessage = `Please confirm your order:
-                Platform: ${userState.platformAction?.platform}
-               Action: ${userState.platformAction?.action}
-                  URL: ${userState.url}
+                    const confirmationMessage = `Please confirm your order: \n
+                Platform: ${userState.platformAction?.platform}\n
+               Action: ${userState.platformAction?.action}\n
+                  URL: ${userState.url}\n
                 Price: $${price}`;
 
                     await sendMessage(chatId, confirmationMessage, getConfirmationKeyboard());
@@ -477,11 +479,11 @@ router.post("/create", async (req: Request, res: Response) => {
                             if (platform && taskName && amount && taskLink) {
                                 const { token } = await handleUserConfirmation(payerId, platform, taskName, amount, signature, taskLink,);
 
-                                await sendMessage(chatId, `Order Saved. Kindly pay through below link  Platform: ${userState.platformAction?.platform}
+                                await sendMessage(chatId, `Order Saved. Kindly pay through below link \n Platform: ${userState.platformAction?.platform}\n
                      
-                       Action: ${userState.platformAction?.action}
-                       URL: ${userState.url}
-                       Price: $${userState.price}
+                       Action: ${userState.platformAction?.action}\n
+                       URL: ${userState.url}\n
+                       Price: $${userState.price}\n
                        Payment link:${BASE_URL}?token=${token}`);
                             }
                         } catch (error) {
