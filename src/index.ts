@@ -4,6 +4,7 @@ import dotenv from "dotenv";
 import userRouter from './routes/user'
 import payerRouter from './routes/payer'
 import { PrismaClient } from "@prisma/client";
+import { defaultErrorMiddleware } from "./middleware";
 
 
 
@@ -39,11 +40,12 @@ app.get("/", async (req: Request, res: Response) => {
     return;
 });
 
-// app.use(errorMiddleware);
+app.use(defaultErrorMiddleware);
 process.on('SIGINT', () => {
     prisma.$disconnect();
     process.exit();
 });
+
 app.listen(process.env.PORT, () => {
     console.log(`Server 💽 listening on PORT ${process.env.PORT}`);
 });

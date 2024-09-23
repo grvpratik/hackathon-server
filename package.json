@@ -7,10 +7,9 @@
 		"dev": "nodemon --exec ts-node src/index.ts",
 		"build": "npx tsc &&  npx prisma generate",
 		"start": " node api/index.js",
-		"test": "echo \"Error: no test specified\" && exit 1" ,
+		"test": "echo \"Error: no test specified\" && exit 1",
 		"postinstall": "prisma generate"
 	},
-
 	"author": "",
 	"license": "ISC",
 	"devDependencies": {
@@ -26,6 +25,7 @@
 	"dependencies": {
 		"@prisma/client": "^5.19.1",
 		"@solana/web3.js": "^1.95.3",
+		"@telegram-apps/init-data-node": "^1.0.4",
 		"axios": "^1.7.7",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.5",

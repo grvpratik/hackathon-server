@@ -34,7 +34,7 @@ model User {
   ref_claim        Boolean? @default(false)
   referral_by   String?
   points         Int @default(0)
-  locked_points    Int
+  locked_points    Int?
   last_checked    DateTime?
   createdAt        DateTime           @default(now())
   updatedAt        DateTime           @updatedAt

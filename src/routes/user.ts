@@ -1,26 +1,117 @@
-import nacl from "tweetnacl";
+
 import { Platforms, PrismaClient } from "@prisma/client";
 import { Router } from "express";
-import jwt from "jsonwebtoken"
 
 
-import { authMiddleware } from "../middleware";
+
+import { authMiddleware, getInitData, userMiddleware } from "../middleware";
 
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import { prisma } from "..";
+import { secret } from './payer';
 
 // const connection = new Connection(process.env.RPC_URL ?? "");
 
 // const PARENT_WALLET_ADDRESS = "2KeovpYvrgpziaDsq8nbNMP4mc48VNBVXb5arbqrg9Cq";
 
 // const DEFAULT_TITLE = "Select the most clickable thumbnail";
+// async function createSessionToken(id: string, tg_id: any) {
+//     const jwt = await new jose.SignJWT({ id, tg_id })
+//         .setProtectedHeader({ alg: 'HS256' })
+//         .setIssuedAt()
+//         .setExpirationTime('1day')
+//         .sign(secret)
 
+//     return jwt
+// }
 
 
 const router = Router();
 
 
 
+
+
+
+
+
+
+
+
+router.post("/auth/session", userMiddleware, async (req, res) => {
+    const client = getInitData(res);
+
+    // Ensure client data is valid
+    if (!client?.user?.id) {
+        return res.status(400).json({ error: "Invalid client data" });
+    }
+
+    try {
+        // Find the user based on the telegram_id
+        let user = await prisma.user.findFirst({
+            where: { telegram_id: client.user.id },
+        });
+
+        let newUser = false;
+
+        // If user does not exist, create one
+        if (!user) {
+            user = await prisma.user.create({
+                data: {
+                    telegram_id: client.user.id,
+                    first_name: client.user.firstName ?? '',
+                    last_name: client.user.username ?? '',
+                },
+            });
+            newUser = true;
+        }
+        // const token = createSessionToken(user.id, user.telegram_id)
+        // Respond with user data directly
+        return res.status(200).json({
+         success:true,
+            newUser,
+        });
+    } catch (error) {
+        console.error("Error during session creation:", error);
+        return res.status(500).json({ error: "Internal server error" });
+    }
+});
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+router.post("/me", userMiddleware, async (req, res) => {
+    const tgData=  getInitData(res)
+    const user = await prisma.user.findFirst({
+        where: {
+            telegram_id:tgData?.user?.id
+        }
+    })
+    if (!user) {
+        res.status(500).json({message:"User not found"})
+    }
+    res.status(200).json({
+        user_id: user?.id,
+        points:user?.points
+    })
+ });
 router.get("/task", async (req, res) => {
     console.log("task")
     // await prismaClient.task.findMany({
@@ -29,25 +120,25 @@ router.get("/task", async (req, res) => {
     //     }
     // })
 
-//    const user= await prismaClient.user.create({
-//         data: {
-//             address: '0x1234567890123456789012345678901234567893', // Example Ethereum address
-//         },
-//     })
+    //    const user= await prismaClient.user.create({
+    //         data: {
+    //             address: '0x1234567890123456789012345678901234567893', // Example Ethereum address
+    //         },
+    //     })
 
     // console.log('Created user:', user)
-//     const task = await prismaClient.task.create({
-//         data: {
-//             platform: Platforms.Twitter,
-//             task_name: 'Share our latest blog post',
-//             amount: 1000000000, // 1 SOL in lamports
-//             signature: 'dummy_signature_12323',
-//             user_id: 2,
-//         },
-//     })
-//     const user = await prismaClient.user.findMany()
-//     console.log(user)
-// // const task  = await prismaClient.task.findMany()
+    //     const task = await prismaClient.task.create({
+    //         data: {
+    //             platform: Platforms.Twitter,
+    //             task_name: 'Share our latest blog post',
+    //             amount: 1000000000, // 1 SOL in lamports
+    //             signature: 'dummy_signature_12323',
+    //             user_id: 2,
+    //         },
+    //     })
+    //     const user = await prismaClient.user.findMany()
+    //     console.log(user)
+    // // const task  = await prismaClient.task.findMany()
     //     console.log('Created task:', task)
     // const worker = await prismaClient.worker.findMany()
     // console.log({worker})
@@ -63,7 +154,7 @@ router.post("/task", authMiddleware, async (req, res) => {
     const body = req.body;
 
     // const body = createTaskInput.safeParse(body);
-console.log({body})
+    console.log({ body })
     // const user = await prismaClient.user.findFirst({
     //     where: {
     //         id: userId
@@ -154,52 +245,52 @@ console.log({body})
 // })
 
 router.post("/signin", async (req, res) => {
-//     const { publicKey, signature } = req.body;
-//     const message = new TextEncoder().encode("Sign into mechanical turks");
+    //     const { publicKey, signature } = req.body;
+    //     const message = new TextEncoder().encode("Sign into mechanical turks");
 
-//     const result = nacl.sign.detached.verify(
-//         message,
-//         new Uint8Array(signature.data),
-//         new PublicKey(publicKey).toBytes(),
-//     );
+    //     const result = nacl.sign.detached.verify(
+    //         message,
+    //         new Uint8Array(signature.data),
+    //         new PublicKey(publicKey).toBytes(),
+    //     );
 
 
-//     if (!result) {
-//         return res.status(411).json({
-//             message: "Incorrect signature"
-//         })
-//     }
-//     console.log({result})
-//     const existingUser = await prismaClient.user.findFirst({
-//         where: {
-//             address: publicKey
-//         }
-//     })
+    //     if (!result) {
+    //         return res.status(411).json({
+    //             message: "Incorrect signature"
+    //         })
+    //     }
+    //     console.log({result})
+    //     const existingUser = await prismaClient.user.findFirst({
+    //         where: {
+    //             address: publicKey
+    //         }
+    //     })
 
-//     if (existingUser) {
-//         const token = jwt.sign({
-//             userId: existingUser.id
-//         }, JWT_SECRET)
-//         console.log({ token })
-//         res.json({
-//             token
-//         })
-//     } else {
-//         const user = await prismaClient.user.create({
-//             data: {
-//                 address: publicKey,
-//             }
-//         })
+    //     if (existingUser) {
+    //         const token = jwt.sign({
+    //             userId: existingUser.id
+    //         }, JWT_SECRET)
+    //         console.log({ token })
+    //         res.json({
+    //             token
+    //         })
+    //     } else {
+    //         const user = await prismaClient.user.create({
+    //             data: {
+    //                 address: publicKey,
+    //             }
+    //         })
 
-//         const token = jwt.sign({
-//             userId: user.id
-//         }, JWT_SECRET)
-// console.log({token})
-//         res.json({
-//             token
-//         })
-//     }
-    
+    //         const token = jwt.sign({
+    //             userId: user.id
+    //         }, JWT_SECRET)
+    // console.log({token})
+    //         res.json({
+    //             token
+    //         })
+    //     }
+
 });
 
 export default router;

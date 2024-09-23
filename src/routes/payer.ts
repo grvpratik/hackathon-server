@@ -358,13 +358,26 @@ router.post("/create", async (req: Request, res: Response) => {
                         await sendMessage(chatId, "Task not found. ❌ ");
                     }
                     taskList.map(async (x) => {
-                        const taskMessage = `
+                        const taskMessage =
+        `
         📌 *Task Name*: _${x.task_name}_ \n
+
+
         🖥️ *Platform*: ${x.platform} \n
+
+
         💰 *Amount*: $${x.amount} \n
+
+
         🔗 *Link*: ${x.task_link ? `[Click here](${x.task_link})` : 'No link provided'} \n
-        💵 *Payment* ${x.signature ? `✅ Done`:`❌ Not done \n`}
+
+
+        💵 *Payment* ${x.signature ? `✅ Done` : `❌ Not done \n`}
+        
+
         ⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x.status}
+
+        
     `.replace(/\./g, '\\.');
 
                         await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
