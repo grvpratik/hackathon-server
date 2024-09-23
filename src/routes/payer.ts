@@ -358,18 +358,21 @@ router.post("/create", async (req: Request, res: Response) => {
                         await sendMessage(chatId, "Task not found. ❌ ");
                     }
                     taskList.map(async (x) => {
+                        const escapeMarkdown = (text:string) => {
+                            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+                        };
+
                         const taskMessage = `
-📌 *Task Name*: _${x.task_name.replace(/[_*[\]()]/g, '\\$&')}_ \n
-🖥️ *Platform*: ${x.platform.replace(/[_*[\]()]/g, '\\$&')} \n
-💰 *Amount*: $${x.amount} \n
-🔗 *Link*: ${x.task_link ? `[Click here](${x.task_link.replace(/[_*[\]()]/g, '\\$&')})` : 'No link provided'} \n
-💵 *Payment*: ${x.signature ? `✅ Done` : `❌ Not done \n`}
-⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x?.status!.replace(/[_*[\]()]/g, '\\$&')}
-`.trim().replace(/\./g, '\\.');
+📌 *Task Name*: ${escapeMarkdown(x.task_name)}
+🖥️ *Platform*: ${escapeMarkdown(x.platform)}
+💰 *Amount*: $${escapeMarkdown(x.amount.toString())}
+🔗 *Link*: ${x.task_link ? `[Click here](${escapeMarkdown(x.task_link)})` : 'No link provided'}
+💵 *Payment*: ${x.signature ? '✅ Done' : '❌ Not done'}
+⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeMarkdown(x.status!)}
+  `.trim();
 
                         await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
                     });
-
 
                 } else {
                     await sendMessage(chatId, "Unknown command.");

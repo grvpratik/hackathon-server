@@ -89,7 +89,10 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
 
 
 
+router.post("/submission", userMiddleware, async (req, res) => { 
 
+
+})
 
 
 
@@ -109,7 +112,8 @@ router.post("/me", userMiddleware, async (req, res) => {
     }
     res.status(200).json({
         user_id: user?.id,
-        points:user?.points
+        points: user?.points,
+        address:user?.address
     })
  });
 router.get("/task", async (req, res) => {
