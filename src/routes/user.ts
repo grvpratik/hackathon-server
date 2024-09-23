@@ -1,5 +1,5 @@
 
-import { Platforms, PrismaClient } from "@prisma/client";
+import { Platforms, PrismaClient, TaskStatus, TxnStatus } from "@prisma/client";
 import { Router } from "express";
 
 
@@ -93,7 +93,14 @@ router.post("/submission", userMiddleware, async (req, res) => {
 
 
 })
-
+router.post("/list", userMiddleware, async (req, res) => {
+    const taskList = await prisma.task.findMany({
+        where: {
+        status:TaskStatus.Active
+        }
+})
+res.status(200).json(taskList)
+})
 
 router.post("/:taskId/submission",userMiddleware, async (req, res) => {
 console.log(req.params.taskId,"id")
