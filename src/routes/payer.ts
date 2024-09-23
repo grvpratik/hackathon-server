@@ -358,20 +358,25 @@ router.post("/create", async (req: Request, res: Response) => {
                         await sendMessage(chatId, "Task not found. ❌ ");
                     }
                     taskList.map(async (x) => {
-                        const escapeMarkdown = (text:string) => {
-                            return text.replace(/[_*[\]()~`>#+=|{}.!-]/g, '\\$&');
+                        const escapeHTML = (text: string) => {
+                            return text
+                                .replace(/&/g, "&amp;")
+                                .replace(/</g, "&lt;")
+                                .replace(/>/g, "&gt;")
+                                .replace(/"/g, "&quot;")
+                                .replace(/'/g, "&#039;");
                         };
 
                         const taskMessage = `
-📌 *Task Name*: ${escapeMarkdown(x.task_name)}
-🖥️ *Platform*: ${escapeMarkdown(x.platform)}
-💰 *Amount*: $${escapeMarkdown(x.amount.toString())}
-🔗 *Link*: ${x.task_link ? `[Click here](${escapeMarkdown(x.task_link)})` : 'No link provided'}
-💵 *Payment*: ${x.signature ? '✅ Done' : '❌ Not done'}
-⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeMarkdown(x.status!)}
-  `.trim();
+<b>📌 Task Name</b>: ${escapeHTML(x.task_name)}<br/>
+<b>🖥️ Platform</b>: ${escapeHTML(x.platform)}<br/>
+<b>💰 Amount</b>: $${escapeHTML(x.amount.toString())}<br/>
+<b>🔗 Link</b>: ${x.task_link ? `<a href="${escapeHTML(x.task_link)}">Click here</a>` : 'No link provided'}<br/>
+<b>💵 Payment</b>: ${x.signature ? '✅ Done' : '❌ Not done'}<br/>
+<b>⏳ Status</b>: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeHTML(x.status!)}
+    `.trim();
 
-                        await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
+                        await sendMessage(chatId, taskMessage, { parse_mode: 'HTML' });
                     });
 
                 } else {

@@ -102,9 +102,14 @@ console.log({authData})
  * @param _req
  * @param res - Response object.
  */
-export const defaultErrorMiddleware: ErrorRequestHandler = (err, _req, res) => {
-    console.log("default error handler")
+export const defaultErrorMiddleware: ErrorRequestHandler = (err, req, res, next) => {
+    console.error("Default error handler caught:", err);
+
+    if (res.headersSent) {
+        return next(err);
+    }
+
     res.status(500).json({
-        error: err.message,
+        error: err.message || 'Internal Server Error',
     });
 };
