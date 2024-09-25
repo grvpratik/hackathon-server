@@ -10,6 +10,8 @@ import { authMiddleware, getInitData, userMiddleware } from "../middleware";
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { prisma } from "..";
 import { secret } from './payer';
+import axios from "axios";
+import { createWorker } from "tesseract.js";
 
 // const connection = new Connection(process.env.RPC_URL ?? "");
 
@@ -69,7 +71,7 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
         // const token = createSessionToken(user.id, user.telegram_id)
         // Respond with user data directly
         return res.status(200).json({
-         success:true,
+            success: true,
             newUser,
         });
     } catch (error) {
@@ -81,6 +83,23 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
 
 
 
+router.get("/submission", async (req, res) => {
+    // Function to perform OCR on image
+    
+    try {
+        const worker = await createWorker('eng');
+        const ret = await worker.recognize('https://api.telegram.org/file/bot6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc/photos/file_2.jpg');
+        console.log(ret.data.text);
+        await worker.terminate();
+    } catch (error) {
+        console.error(error)
+    }
+
+    res.status(200).json({
+        success: true,
+        message: "iamge text here "
+    })
+})
 
 
 
@@ -88,22 +107,58 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
 
 
 
-
-router.post("/submission", userMiddleware, async (req, res) => { 
+router.post("/submission", userMiddleware, async (req, res) => {
 
 
 })
 router.post("/list", userMiddleware, async (req, res) => {
     const taskList = await prisma.task.findMany({
         where: {
-        status:TaskStatus.Active
+            status: TaskStatus.Active
         }
-})
-res.status(200).json(taskList)
+    })
+    res.status(200).json(taskList)
 })
 
-router.post("/:taskId/submission",userMiddleware, async (req, res) => {
-console.log(req.params.taskId,"id")
+router.post("/:taskId/submit", userMiddleware, async (req, res, next) => {
+    console.log(req.params.taskId, "id")
+    const data = getInitData(res)!
+    console.log({ data })
+    const chatId = data?.user?.id
+    console.log({ chatId })
+    const sendMessage = async (chatId: number, message: string) => {
+
+        const botToken = '6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc'; // Replace with your bot's token
+
+        const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+
+
+
+        try {
+
+            const response = await axios.post(apiUrl, {
+                chat_id: chatId,
+                text: message
+
+            });
+
+            console.log('Message sent successfully:', response.data);
+            res.status(200).json({ success: true })
+        } catch (error) {
+            next(error)
+            console.error('Error sending message:', error);
+
+        }
+
+    };
+
+
+
+    // Example usage:
+
+    await sendMessage(chatId!, req.params.taskId);
+
+
 
 })
 
@@ -113,21 +168,21 @@ console.log(req.params.taskId,"id")
 
 
 router.post("/me", userMiddleware, async (req, res) => {
-    const tgData=  getInitData(res)
+    const tgData = getInitData(res)
     const user = await prisma.user.findFirst({
         where: {
-            telegram_id:tgData?.user?.id
+            telegram_id: tgData?.user?.id
         }
     })
     if (!user) {
-        res.status(500).json({message:"User not found"})
+        res.status(500).json({ message: "User not found" })
     }
     res.status(200).json({
         user_id: user?.id,
         points: user?.points,
-        address:user?.address
+        address: user?.address
     })
- });
+});
 router.get("/task", async (req, res) => {
     console.log("task")
     // await prismaClient.task.findMany({

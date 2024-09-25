@@ -10,6 +10,8 @@ import nacl from 'tweetnacl';
 
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
+import {  imageHandlerchat } from '../bot/image-handler';
+import { editMessageReplyMarkup, sendMessage } from '../bot/bot-function';
 
 const connection = new Connection(process.env.RPC_URL ?? "https://api.devnet.solana.com");
 
@@ -36,6 +38,42 @@ async function createPaymentToken(payerId: string, taskId: string) {
 
     return jwt
 }
+
+///////////////////
+
+
+// async function imageHandlerchat(chatId: any, photo: any) {
+//     console.log("IMAGE HANDLER FUNCTION")
+//     await sendMessage(chatId, "Image recieved");
+// }
+
+
+
+
+
+///////////////////////////////
+
+const escapeMarkdown = (text: string) => {
+    return text
+        .replace(/_/g, "\\_")
+        .replace(/\*/g, "\\*")
+        .replace(/\[/g, "\\[")
+        .replace(/\]/g, "\\]")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)")
+        .replace(/~/g, "\\~")
+        .replace(/`/g, "\\`")
+        .replace(/>/g, "\\>")
+        .replace(/#/g, "\\#")
+        .replace(/\+/g, "\\+")
+        .replace(/-/g, "\\-")
+        .replace(/=/g, "\\=")
+        .replace(/\|/g, "\\|")
+        .replace(/\{/g, "\\{")
+        .replace(/\}/g, "\\}")
+        .replace(/\./g, "\\.")
+        .replace(/!/g, "\\!");
+};
 // Define types and enums
 enum Platform {
     YOUTUBE = 'youtube',
@@ -185,44 +223,8 @@ async function handleUserConfirmation(
 
 // In-memory store for user states (replace with a database in production)
 const userStates: Map<number, UserState> = new Map();
-const TELEGRAM_BOT_TOKEN = "6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc"
-const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN!}`;
-// console.log({ TELEGRAM_API_URL })
 
 // Helper functions
-async function sendMessage(chatId: number, text: string, options = {}) {
-    try {
-        const response = await axios.post(`${TELEGRAM_API_URL}/sendMessage`, {
-            chat_id: chatId,
-            text,
-            ...options,
-        });
-        return response.data;
-    } catch (error) {
-        if (error instanceof AxiosError) {
-            console.error('Error sending message to Telegram:', error.response?.data || error.message);
-        }
-        throw error;
-    }
-}
-
-async function editMessageReplyMarkup(chatId: number, messageId: number) {
-    try {
-        const response = await axios.post(`${TELEGRAM_API_URL}/editMessageReplyMarkup`, {
-            chat_id: chatId,
-            message_id: messageId,
-            reply_markup: {
-                inline_keyboard: [],
-            },
-        });
-        return response.data;
-    } catch (error) {
-        if (error instanceof AxiosError) {
-            console.error('Error editing message reply markup:', error.response?.data || error.message);
-        }
-        throw error;
-    }
-}
 
 function getInitialKeyboard() {
     return {
@@ -319,9 +321,7 @@ function validateUrl(url: string, platform: Platform): boolean {
 
 
 router.post("/create", async (req: Request, res: Response) => {
-    // const payer = await prisma.payer.findMany();
-    // console.log(payer)
-    // res.send("payer")
+
     console.log("start")
     try {
         const body = req.body;
@@ -329,6 +329,9 @@ router.post("/create", async (req: Request, res: Response) => {
 
         const { message, callback_query } = body;
 
+        if (message.photo &&message.chat.id) {
+            imageHandlerchat(message.chat.id,message.photo)
+        }
         if (message && message.chat && message.text) {
             const chatId = message.chat.id;
             const text = message.text;
@@ -358,27 +361,20 @@ router.post("/create", async (req: Request, res: Response) => {
                         await sendMessage(chatId, "Task not found. ❌ ");
                     }
                     taskList.map(async (x) => {
-                        const escapeHTML = (text: string) => {
-                            return text
-                                .replace(/&/g, "&amp;")
-                                .replace(/</g, "&lt;")
-                                .replace(/>/g, "&gt;")
-                                .replace(/"/g, "&quot;")
-                                .replace(/'/g, "&#039;");
-                        };
 
                         const taskMessage = `
-<b>📌 Task Name</b>: ${escapeHTML(x.task_name)}<br/>
-<b>🖥️ Platform</b>: ${escapeHTML(x.platform)}<br/>
-<b>💰 Amount</b>: $${escapeHTML(x.amount.toString())}<br/>
-<b>🔗 Link</b>: ${x.task_link ? `<a href="${escapeHTML(x.task_link)}">Click here</a>` : 'No link provided'}<br/>
-<b>💵 Payment</b>: ${x.signature ? '✅ Done' : '❌ Not done'}<br/>
-<b>⏳ Status</b>: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeHTML(x.status!) }
+*📌 Task Name*: ${escapeMarkdown(x.task_name)}\n
+*🖥️ Platform*: ${escapeMarkdown(x.platform)}\n
+*💰 Amount*: \$${escapeMarkdown(x.amount.toString())}\n
+*🔗 Link*: ${x.task_link ? `[Click here](${escapeMarkdown(x.task_link)})` : 'No link provided'}\n
+*💵 Payment*: ${x.signature ? '✅ Done' : '❌ Not done'}\n
+*⏳ Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeMarkdown(x.status!)}
 THIS IS TEST
     `.trim();
 
-                        await sendMessage(chatId, taskMessage, { parse_mode: 'HTML' });
+                        await sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
                     });
+
 
                 } else {
                     await sendMessage(chatId, "Unknown command.");
@@ -445,11 +441,11 @@ THIS IS TEST
                     userStates.set(chatId, userState);
 
                     // Prepare and send a confirmation message with order details
-                    const confirmationMessage = `Please confirm your order: \n
-                Platform: ${userState.platformAction?.platform}\n
-               Action: ${userState.platformAction?.action}\n
-                  URL: ${userState.url}\n
-                Price: $${price}`;
+                    const confirmationMessage = `Please confirm your order:\n
+Platform: ${escapeMarkdown(userState.platformAction?.platform || '')}\n
+Action: ${escapeMarkdown(userState.platformAction?.action || '')}\n
+URL: ${escapeMarkdown(userState.url || '')}\n
+Price: \$${escapeMarkdown(price.toString())}`;
 
                     await sendMessage(chatId, confirmationMessage, getConfirmationKeyboard());
                 }
@@ -517,8 +513,11 @@ THIS IS TEST
         res.status(500).json({ error: 'Server error' });
     }
 });
-router.get("/create", async (req: Request, res: Response) => { 
-    res.status(200).json({message:"create route ok "})
+router.get("/create", async (req: Request, res: Response) => {
+    const list = await prisma.task.findMany({
+        where: {}
+    })
+    res.status(200).json(list)
 })
 
 router.post("/wallet", authMiddleware, async (req: Request, res: Response) => {
@@ -640,7 +639,7 @@ router.post("/task", authMiddleware, async (req, res) => {
         // Update task status and store the transaction signature in the database
         const duplicateSignature = await prisma.task.findFirst({
             where: { signature: signature, },
-          
+
         });
         if (duplicateSignature) {
             return res.status(302).json({ message: "No Duplicate transation" });
