@@ -85,7 +85,7 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
 
 router.get("/submission", async (req, res) => {
     // Function to perform OCR on image
-    
+
     try {
         const worker = await createWorker('eng');
         const ret = await worker.recognize('https://api.telegram.org/file/bot6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc/photos/file_2.jpg');
@@ -120,47 +120,73 @@ router.post("/list", userMiddleware, async (req, res) => {
     res.status(200).json(taskList)
 })
 
+const BOT_TOKEN = '6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc'; // Consider moving to env variables
+const POINTS = 200;
+
+const sendMessage = async (chatId: number, message: string) => {
+    const apiUrl = `https://api.telegram.org/bot${BOT_TOKEN}/sendMessage`;
+
+    try {
+        await axios.post(apiUrl, {
+            chat_id: chatId,
+            text: message
+        });
+    } catch (error) {
+        console.error('Error sending message:', error);
+        throw new Error('Telegram message failed to send.');
+    }
+};
+
 router.post("/:taskId/submit", userMiddleware, async (req, res, next) => {
-    console.log(req.params.taskId, "id")
-    const data = getInitData(res)!
-    console.log({ data })
-    const chatId = data?.user?.id
-    console.log({ chatId })
-    const sendMessage = async (chatId: number, message: string) => {
+    const taskId = req.params.taskId;
+    const userData = getInitData(res);
+    const chatId = userData?.user?.id;
 
-        const botToken = '6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc'; // Replace with your bot's token
+    if (!chatId) {
+        return res.status(400).json({ error: 'Chat ID is required.' });
+    }
 
-        const apiUrl = `https://api.telegram.org/bot${botToken}/sendMessage`;
+    try {
+        const user = await prisma.user.findFirst({
+            where: { telegram_id: chatId }
+        });
 
-
-
-        try {
-
-            const response = await axios.post(apiUrl, {
-                chat_id: chatId,
-                text: message
-
-            });
-
-            console.log('Message sent successfully:', response.data);
-            res.status(200).json({ success: true })
-        } catch (error) {
-            next(error)
-            console.error('Error sending message:', error);
-
+        if (!user) {
+            return res.status(404).json({ error: 'User not found.' });
         }
+        await prisma.proof.deleteMany({
+            where: {
+                telegram_id: chatId,
+                userId: user.id
+            }
+        });
 
-    };
+        // let submission = await prisma.submission.findFirst({
+        //     where: {
+        //         user_id: user.id,
+        //         task_id: taskId,
+        //     }
+        // });
 
 
+        const submission = await prisma.proof.create({
+            data: {
+                telegram_id:chatId,
+                userId: user.id,
+                taskId: taskId,
+                amount: POINTS,
 
-    // Example usage:
-
-    await sendMessage(chatId!, req.params.taskId);
-
+            }
+        });
 
 
-})
+        await sendMessage(chatId, `Successfully created submission\nID: ${submission.id}\nPlease upload your proof.`);
+        return res.status(201).json({ submissionId: submission.id });
+
+    } catch (error) {
+        next(error);
+    }
+});
 
 
 

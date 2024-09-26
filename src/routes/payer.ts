@@ -10,7 +10,7 @@ import nacl from 'tweetnacl';
 
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
-import {  imageHandlerchat } from '../bot/image-handler';
+import { imageHandlerChat } from '../bot/image-handler';
 import { editMessageReplyMarkup, sendMessage } from '../bot/bot-function';
 
 const connection = new Connection(process.env.RPC_URL ?? "https://api.devnet.solana.com");
@@ -329,8 +329,8 @@ router.post("/create", async (req: Request, res: Response) => {
 
         const { message, callback_query } = body;
 
-        if (message.photo &&message.chat.id) {
-            imageHandlerchat(message.chat.id,message.photo)
+        if (message.photo && message.chat.id) {
+            imageHandlerChat(message.chat.id, message.photo)
         }
         if (message && message.chat && message.text) {
             const chatId = message.chat.id;

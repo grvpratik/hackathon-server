@@ -3,60 +3,59 @@ const token = "6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc";
 const bot = new TelegramBot(token, { polling: true });
 
 // Handle /start command
-bot.onText(/\/test/, (msg) => {
-	const chatId = msg.chat.id;
+let submissions = {};
 
-	// Send initial options
-	bot.sendMessage(chatId, "Choose an option:", {
-		reply_markup: {
-			inline_keyboard: [
-				[{ text: "Option 1", callback_data: "option1" }],
-				[{ text: "Option 2", callback_data: "option2" }],
-			],
-		},
-	});
+bot.onText(/\/start (.+)/, (msg, match) => {
+	const chatId = msg.chat.id;
+	const submissionId = match[1];
+
+	// Store the active submission for this chat
+	submissions[chatId] = { id: submissionId, status: "pending" };
+
+	bot.sendMessage(
+		chatId,
+		`Ready to receive proof for submission ${submissionId}. Please send a photo.`
+	);
 });
 
-// Handle button presses (callback queries)
-bot.on("callback_query", (callbackQuery) => {
-	const msg = callbackQuery.message;
+bot.on("photo", (msg) => {
 	const chatId = msg.chat.id;
-	const data = callbackQuery.data;
 
-	if (data === "option1") {
-		// User selected "Option 1"
-		bot.sendMessage(chatId, "You chose Option 1. Now pick a sub-option:", {
-			reply_markup: {
-				inline_keyboard: [
-					[{ text: "Sub-option A", callback_data: "suboption_a" }],
-					[{ text: "Sub-option B", callback_data: "suboption_b" }],
-				],
-			},
-		});
-	} else if (data === "option2") {
-		// User selected "Option 2"
-		bot.sendMessage(chatId, "You chose Option 2. Now pick a sub-option:", {
-			reply_markup: {
-				inline_keyboard: [
-					[{ text: "Sub-option C", callback_data: "suboption_c" }],
-					[{ text: "Sub-option D", callback_data: "suboption_d" }],
-				],
-			},
-		});
-	} else if (data === "suboption_a") {
-		// User selected "Sub-option A"
-		bot.sendMessage(chatId, "You picked Sub-option A.");
-	} else if (data === "suboption_b") {
-		// User selected "Sub-option B"
-		bot.sendMessage(chatId, "You picked Sub-option B.");
-	} else if (data === "suboption_c") {
-		// User selected "Sub-option C"
-		bot.sendMessage(chatId, "You picked Sub-option C.");
-	} else if (data === "suboption_d") {
-		// User selected "Sub-option D"
-		bot.sendMessage(chatId, "You picked Sub-option D.");
+	if (submissions[chatId] && submissions[chatId].status === "pending") {
+		const submissionId = submissions[chatId].id;
+		const fileId = msg.photo[msg.photo.length - 1].file_id;
+
+		// In a real application, you'd save this file_id to your database
+		submissions[chatId].status = "completed";
+		submissions[chatId].proofFileId = fileId;
+
+		bot.sendMessage(
+			chatId,
+			`Thank you! Proof received for submission ${submissionId}.`
+		);
+
+		// Here you would update your actual database with the proof
+		console.log(`Submission ${submissionId} completed with proof ${fileId}`);
+	} else {
+		bot.sendMessage(
+			chatId,
+			"I'm not expecting a proof from you right now. Please start a task first."
+		);
 	}
 });
+
+bot.on("message", (msg) => {
+	const chatId = msg.chat.id;
+
+	if (!msg.photo) {
+		bot.sendMessage(
+			chatId,
+			"I'm expecting a photo as proof. Please send a photo."
+		);
+	}
+});
+
+console.log("Bot is running...");
 
 // Log errors
 bot.on("polling_error", (error) => {

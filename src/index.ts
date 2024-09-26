@@ -5,6 +5,7 @@ import userRouter from './routes/user';
 import payerRouter from './routes/payer';
 import { PrismaClient } from "@prisma/client";
 import { defaultErrorMiddleware } from "./middleware";
+import taskRouter from "./routes/tasks";
 
 dotenv.config();
 
@@ -22,6 +23,7 @@ prisma.$connect().then(() => {
     process.exit(1);
 });
 
+app.use("/v1/tasks", taskRouter);
 app.use("/v1/user", userRouter);
 app.use("/v1/payer", payerRouter);
 

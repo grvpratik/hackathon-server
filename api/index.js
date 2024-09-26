@@ -19,35 +19,36 @@ const dotenv_1 = __importDefault(require("dotenv"));
 const user_1 = __importDefault(require("./routes/user"));
 const payer_1 = __importDefault(require("./routes/payer"));
 const client_1 = require("@prisma/client");
+const middleware_1 = require("./middleware");
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
 app.use((0, cors_1.default)());
 exports.prisma = new client_1.PrismaClient();
-exports.prisma.$transaction((prisma) => __awaiter(void 0, void 0, void 0, function* () {
-    // Code running in a transaction...
-}), {
-    maxWait: 5000, // default: 2000
-    timeout: 10000, // default: 5000
+exports.prisma.$connect().then(() => {
+    console.log('Connected to database');
+}).catch((err) => {
+    console.error('Failed to connect to database', err);
+    process.exit(1);
 });
 app.use("/v1/user", user_1.default);
 app.use("/v1/payer", payer_1.default);
-app.get("/", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+app.get("/", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         res.status(200).send("get request here");
     }
     catch (error) {
-        console.log(error);
-        res.status(500).send("Internal Server Error");
+        next(error);
     }
-    return;
 }));
-// app.use(errorMiddleware);
-process.on('SIGINT', () => {
-    exports.prisma.$disconnect();
+// This should be after all routes
+app.use(middleware_1.defaultErrorMiddleware);
+process.on('SIGINT', () => __awaiter(void 0, void 0, void 0, function* () {
+    yield exports.prisma.$disconnect();
     process.exit();
-});
-app.listen(process.env.PORT, () => {
-    console.log(`Server 💽 listening on PORT ${process.env.PORT}`);
+}));
+const PORT = process.env.PORT || 3000;
+app.listen(PORT, () => {
+    console.log(`Server 💽 listening on PORT ${PORT}`);
 });
 exports.default = app;

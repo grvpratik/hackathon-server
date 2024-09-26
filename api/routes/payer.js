@@ -40,11 +40,12 @@ exports.secret = void 0;
 const jose = __importStar(require("jose"));
 const __1 = require("..");
 const express_1 = require("express");
-const axios_1 = __importStar(require("axios"));
 const client_1 = require("@prisma/client");
 const middleware_1 = require("../middleware");
 const tweetnacl_1 = __importDefault(require("tweetnacl"));
 const web3_js_1 = require("@solana/web3.js");
+const image_handler_1 = require("../bot/image-handler");
+const bot_function_1 = require("../bot/bot-function");
 const connection = new web3_js_1.Connection((_a = process.env.RPC_URL) !== null && _a !== void 0 ? _a : "https://api.devnet.solana.com");
 const PARENT_WALLET_ADDRESS = "j1oAbxxiDUWvoHxEDhWE7THLjEkDQW2cSHYn2vttxTF";
 const router = (0, express_1.Router)();
@@ -60,6 +61,33 @@ function createPaymentToken(payerId, taskId) {
         return jwt;
     });
 }
+///////////////////
+// async function imageHandlerchat(chatId: any, photo: any) {
+//     console.log("IMAGE HANDLER FUNCTION")
+//     await sendMessage(chatId, "Image recieved");
+// }
+///////////////////////////////
+const escapeMarkdown = (text) => {
+    return text
+        .replace(/_/g, "\\_")
+        .replace(/\*/g, "\\*")
+        .replace(/\[/g, "\\[")
+        .replace(/\]/g, "\\]")
+        .replace(/\(/g, "\\(")
+        .replace(/\)/g, "\\)")
+        .replace(/~/g, "\\~")
+        .replace(/`/g, "\\`")
+        .replace(/>/g, "\\>")
+        .replace(/#/g, "\\#")
+        .replace(/\+/g, "\\+")
+        .replace(/-/g, "\\-")
+        .replace(/=/g, "\\=")
+        .replace(/\|/g, "\\|")
+        .replace(/\{/g, "\\{")
+        .replace(/\}/g, "\\}")
+        .replace(/\./g, "\\.")
+        .replace(/!/g, "\\!");
+};
 // Define types and enums
 var Platform;
 (function (Platform) {
@@ -168,46 +196,7 @@ function handleUserConfirmation(payerId, platform, taskName, amount, signature, 
 }
 // In-memory store for user states (replace with a database in production)
 const userStates = new Map();
-const TELEGRAM_BOT_TOKEN = "6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc";
-const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}`;
-// console.log({ TELEGRAM_API_URL })
 // Helper functions
-function sendMessage(chatId_1, text_1) {
-    return __awaiter(this, arguments, void 0, function* (chatId, text, options = {}) {
-        var _a;
-        try {
-            const response = yield axios_1.default.post(`${TELEGRAM_API_URL}/sendMessage`, Object.assign({ chat_id: chatId, text }, options));
-            return response.data;
-        }
-        catch (error) {
-            if (error instanceof axios_1.AxiosError) {
-                console.error('Error sending message to Telegram:', ((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message);
-            }
-            throw error;
-        }
-    });
-}
-function editMessageReplyMarkup(chatId, messageId) {
-    return __awaiter(this, void 0, void 0, function* () {
-        var _a;
-        try {
-            const response = yield axios_1.default.post(`${TELEGRAM_API_URL}/editMessageReplyMarkup`, {
-                chat_id: chatId,
-                message_id: messageId,
-                reply_markup: {
-                    inline_keyboard: [],
-                },
-            });
-            return response.data;
-        }
-        catch (error) {
-            if (error instanceof axios_1.AxiosError) {
-                console.error('Error editing message reply markup:', ((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message);
-            }
-            throw error;
-        }
-    });
-}
 function getInitialKeyboard() {
     return {
         reply_markup: {
@@ -295,14 +284,14 @@ function validateUrl(url, platform) {
 }
 router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     var _a, _b, _c, _d, _e, _f;
-    // const payer = await prisma.payer.findMany();
-    // console.log(payer)
-    // res.send("payer")
     console.log("start");
     try {
         const body = req.body;
         console.log('Received Telegram update:', JSON.stringify(body, null, 2));
         const { message, callback_query } = body;
+        if (message.photo && message.chat.id) {
+            (0, image_handler_1.imageHandlerchat)(message.chat.id, message.photo);
+        }
         if (message && message.chat && message.text) {
             const chatId = message.chat.id;
             const text = message.text;
@@ -310,17 +299,17 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                 const command = text.slice(1);
                 if (command === 'start') {
                     userStates.set(chatId, { state: State.INITIAL });
-                    yield sendMessage(chatId, "Hi! Choose a Platform:", getInitialKeyboard());
+                    yield (0, bot_function_1.sendMessage)(chatId, "Hi! Choose a Platform:", getInitialKeyboard());
                 }
                 else if (command === 'list') {
-                    yield sendMessage(chatId, "Here are the list of Tasks: ");
+                    yield (0, bot_function_1.sendMessage)(chatId, "Here are the list of Tasks: ");
                     const userFound = yield __1.prisma.payer.findUnique({
                         where: {
                             telegram_id: chatId
                         }
                     });
                     if (!userFound) {
-                        yield sendMessage(chatId, "User not found. ❌ ");
+                        yield (0, bot_function_1.sendMessage)(chatId, "User not found. ❌ ");
                     }
                     const taskList = yield __1.prisma.task.findMany({
                         where: {
@@ -328,21 +317,23 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                         }
                     });
                     if (!taskList) {
-                        yield sendMessage(chatId, "Task not found. ❌ ");
+                        yield (0, bot_function_1.sendMessage)(chatId, "Task not found. ❌ ");
                     }
                     taskList.map((x) => __awaiter(void 0, void 0, void 0, function* () {
                         const taskMessage = `
-                                                📌 *Task Name*: _${x.task_name}_
-                                                🖥️ *Platform*: ${x.platform}
-                                                💰 *Amount*: $${x.amount} 
-                                                🔗 *Link*: ${x.signature ? `[Click here](${x.signature})` : 'No link provided'}
-                                                ⏳ *Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : x.status}
-                                                 `.replace(/\./g, '\\.');
-                        yield sendMessage(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
+*📌 Task Name*: ${escapeMarkdown(x.task_name)}\n
+*🖥️ Platform*: ${escapeMarkdown(x.platform)}\n
+*💰 Amount*: \$${escapeMarkdown(x.amount.toString())}\n
+*🔗 Link*: ${x.task_link ? `[Click here](${escapeMarkdown(x.task_link)})` : 'No link provided'}\n
+*💵 Payment*: ${x.signature ? '✅ Done' : '❌ Not done'}\n
+*⏳ Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeMarkdown(x.status)}
+THIS IS TEST
+    `.trim();
+                        yield (0, bot_function_1.sendMessage)(chatId, taskMessage, { parse_mode: 'MarkdownV2' });
                     }));
                 }
                 else {
-                    yield sendMessage(chatId, "Unknown command.");
+                    yield (0, bot_function_1.sendMessage)(chatId, "Unknown command.");
                 }
             }
             else {
@@ -355,16 +346,16 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                             userState.url = text;
                             userState.state = State.PRICING;
                             userStates.set(chatId, userState);
-                            yield sendMessage(chatId, "URL validated. Choose a price:", getPricingKeyboard());
+                            yield (0, bot_function_1.sendMessage)(chatId, "URL validated. Choose a price:", getPricingKeyboard());
                         }
                         else {
-                            yield sendMessage(chatId, "Invalid URL. Please try again with a valid URL for the selected platform.");
+                            yield (0, bot_function_1.sendMessage)(chatId, "Invalid URL. Please try again with a valid URL for the selected platform.");
                         }
                     }
                 }
                 catch (error) {
                     console.error(error);
-                    yield sendMessage(chatId, "Error occured while processing url try again");
+                    yield (0, bot_function_1.sendMessage)(chatId, "Error occured while processing url try again");
                 }
             }
         }
@@ -377,7 +368,7 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
             const first_name = callback_query.message.chat.first_name;
             const last_name = callback_query.message.chat.username;
             // Remove the inline keyboard from the previous message
-            yield editMessageReplyMarkup(chatId, messageId);
+            yield (0, bot_function_1.editMessageReplyMarkup)(chatId, messageId);
             console.log("data inside callback_query", data);
             // Handle platform selection
             if (Object.values(Platform).includes(data)) {
@@ -387,7 +378,7 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                     platformAction: { platform: data, action: null }
                 });
                 // Send a message asking the user to select an action for the chosen platform
-                yield sendMessage(chatId, `You chose ${data}. Now select type:`, getPlatformActionKeyboard(data));
+                yield (0, bot_function_1.sendMessage)(chatId, `You chose ${data}. Now select type:`, getPlatformActionKeyboard(data));
             }
             // Handle price selection
             else if (data.startsWith('price_')) {
@@ -402,12 +393,12 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                     userState.state = State.CONFIRMATION;
                     userStates.set(chatId, userState);
                     // Prepare and send a confirmation message with order details
-                    const confirmationMessage = `Please confirm your order:
-                Platform: ${(_a = userState.platformAction) === null || _a === void 0 ? void 0 : _a.platform}
-               Action: ${(_b = userState.platformAction) === null || _b === void 0 ? void 0 : _b.action}
-                  URL: ${userState.url}
-                Price: $${price}`;
-                    yield sendMessage(chatId, confirmationMessage, getConfirmationKeyboard());
+                    const confirmationMessage = `Please confirm your order:\n
+Platform: ${escapeMarkdown(((_a = userState.platformAction) === null || _a === void 0 ? void 0 : _a.platform) || '')}\n
+Action: ${escapeMarkdown(((_b = userState.platformAction) === null || _b === void 0 ? void 0 : _b.action) || '')}\n
+URL: ${escapeMarkdown(userState.url || '')}\n
+Price: \$${escapeMarkdown(price.toString())}`;
+                    yield (0, bot_function_1.sendMessage)(chatId, confirmationMessage, getConfirmationKeyboard());
                 }
             }
             // Handle action selection for a platform
@@ -422,7 +413,7 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                     userState.state = State.URL_REQUIRED;
                     userStates.set(chatId, userState);
                     // Prompt the user to enter a URL for the chosen platform and action
-                    yield sendMessage(chatId, `Please enter the URL for ${platform} ${action}:`);
+                    yield (0, bot_function_1.sendMessage)(chatId, `Please enter the URL for ${platform} ${action}:`);
                 }
             }
             // Handle order confirmation or cancellation
@@ -442,21 +433,21 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
                             const signature = "";
                             if (platform && taskName && amount && taskLink) {
                                 const { token } = yield handleUserConfirmation(payerId, platform, taskName, amount, signature, taskLink);
-                                yield sendMessage(chatId, `Order Saved. Kindly pay through below link  Platform: ${(_e = userState.platformAction) === null || _e === void 0 ? void 0 : _e.platform}
+                                yield (0, bot_function_1.sendMessage)(chatId, `Order Saved. Kindly pay through below link \n Platform: ${(_e = userState.platformAction) === null || _e === void 0 ? void 0 : _e.platform}\n
                      
-                       Action: ${(_f = userState.platformAction) === null || _f === void 0 ? void 0 : _f.action}
-                       URL: ${userState.url}
-                       Price: $${userState.price}
+                       Action: ${(_f = userState.platformAction) === null || _f === void 0 ? void 0 : _f.action}\n
+                       URL: ${userState.url}\n
+                       Price: $${userState.price}\n
                        Payment link:${BASE_URL}?token=${token}`);
                             }
                         }
                         catch (error) {
-                            yield sendMessage(chatId, "Order Creation failed!");
+                            yield (0, bot_function_1.sendMessage)(chatId, "Order Creation failed!");
                         }
                     }
                     else {
                         // Send a cancellation message
-                        yield sendMessage(chatId, "Order cancelled. You can start over with the /start command.");
+                        yield (0, bot_function_1.sendMessage)(chatId, "Order cancelled. You can start over with the /start command.");
                     }
                     // Clear the user state after confirming or cancelling
                     userStates.delete(chatId);
@@ -471,7 +462,10 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
     }
 }));
 router.get("/create", (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    res.status(200).json({ message: "create route ok " });
+    const list = yield __1.prisma.task.findMany({
+        where: {}
+    });
+    res.status(200).json(list);
 }));
 router.post("/wallet", middleware_1.authMiddleware, (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     // @ts-ignore

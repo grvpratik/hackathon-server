@@ -12,71 +12,76 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-
+model Proof{
+  id          String    @id @default(uuid())
+  telegram_id BigInt    @unique
+  taskId       String
+  userId      String
+  amount       Int?
+}
 model Payer {
-  id      String       @id @default(uuid())
-   telegram_id       BigInt @unique
-  first_name      String?
-  Last_name      String?
-  address String?    @unique
-  tasks   Task[]
-  payouts Payouts[]
+  id          String    @id @default(uuid())
+  telegram_id BigInt    @unique
+  first_name  String?
+  Last_name   String?
+  address     String?   @unique
+  tasks       Task[]
+  payouts     Payouts[]
 }
 
 model User {
-  id             String         @id @default(uuid())
-  telegram_id       BigInt @unique
-  first_name      String?
-  last_name      String?
-  address        String?       @unique
-  submissions    Submission[]
-  referral_code   String?
-  ref_claim        Boolean? @default(false)
+  id            String       @id @default(uuid())
+  telegram_id   BigInt       @unique
+  first_name    String?
+  last_name     String?
+  address       String?      @unique
+  submissions   Submission[]
+  referral_code String?
+  ref_claim     Boolean?     @default(false)
   referral_by   String?
-  points         Int @default(0)
-  locked_points    Int?
-  last_checked    DateTime?
-  createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  points        Int          @default(0)
+  locked_points Int?
+  last_checked  DateTime?
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
 }
 
 model Task {
-  id       String       @id @default(uuid())
+  id        String    @id @default(uuid())
   platform  Platforms
   task_name String
   amount    Int
   signature String
-comment String?
-task_link String
-  payer_id String
+  comment   String?
+  task_link String
+  payer_id  String
 
- 
-  payer        Payer         @relation(fields: [payer_id], references: [id])
+  payer       Payer        @relation(fields: [payer_id], references: [id])
   submissions Submission[]
 
-status     TaskStatus?
-endDate        DateTime? 
-    createdAt        DateTime           @default(now())
-  updatedAt        DateTime           @updatedAt
+  status    TaskStatus?
+  endDate   DateTime?
+  createdAt DateTime    @default(now())
+  updatedAt DateTime    @updatedAt
 }
 
 model Submission {
-  id        String    @id @default(uuid())
+  id      String @id @default(uuid())
   user_id String
-  user    User @relation(fields: [user_id], references: [id])
+  user    User   @relation(fields: [user_id], references: [id])
 
   task_id String
-  task    Task @relation(fields: [task_id], references: [id])
+  task    Task   @relation(fields: [task_id], references: [id])
   amount  Int
-proof   String
+  proof   String
 
   @@unique([user_id, task_id])
 }
 
 model Payouts {
-  id        String       @id @default(uuid())
-  payer_id   String
- payer     Payer      @relation(fields: [payer_id], references: [id])
+  id        String    @id @default(uuid())
+  payer_id  String
+  payer     Payer     @relation(fields: [payer_id], references: [id])
   amount    Int
   signature String
   status    TxnStatus
@@ -87,11 +92,13 @@ enum TxnStatus {
   Success
   Failure
 }
-enum TaskStatus{
+
+enum TaskStatus {
   Active
   Hold
   End
 }
+
 enum Platforms {
   twitter
   youtube
