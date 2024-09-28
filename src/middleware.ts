@@ -18,7 +18,7 @@ declare module "express" {
 
 export async function authMiddleware(req: Request, res: Response, next: NextFunction) {
     const authHeader = req.headers["authorization"] ?? "";
-    console.log({authHeader})
+    // console.log({authHeader})
     // Early return if authorization header is missing
     if (!authHeader) {
         return res.status(403).json({ message: "You are not logged in" });
@@ -36,6 +36,7 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         req.taskId = payload.taskId as string;
         next();  // Proceed to the next middleware or route handler
     } catch (error) {
+        console.log(error)
         return res.status(403).json({ message: "Invalid token" });
     }
 }
@@ -69,7 +70,7 @@ console.log({authData})
     switch (authType) {
         case 'tma':
             try {
-                console.log({token})
+                // console.log({token})
                 // Validate init data.
                 validate(authData, token, {
                     // We consider init data sign valid for 1 hour from their creation moment.

@@ -25,6 +25,7 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
             }
         }
         // throw error;
+        
     }
 }
 

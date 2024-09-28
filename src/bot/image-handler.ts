@@ -1,22 +1,12 @@
 import { createWorker, Worker } from "tesseract.js";
 import { getImageUrl, sendMessage } from "./bot-function";
-import axios, { AxiosResponse } from "axios";
+import axios from "axios";
 import sharp from "sharp";
 import crypto from 'crypto';
 import https from 'https';
 import { prisma } from "..";
-import { appendFile } from "fs";
-// prisma.$transaction(
-//     async (prisma) => {
-//         // Code running in a transaction...
-//     },
-//     {
-//         maxWait: 5000, // default: 2000
-//         timeout: 10000, // default: 5000
-//     }
-// );
 
-// Define types
+// Types
 type PhotoSize = {
     file_id: string;
     file_unique_id: string;
@@ -31,9 +21,9 @@ type Config = {
     MIN_CONFIDENCE: number;
 };
 
-// Mock config (replace with actual config in production)
+// Configuration
 const config: Config = {
-    KEYWORDS: ["Follow", "Subscribe", "YouTube", "Like", "Comment", "Twitter"],
+    KEYWORDS: ["posts", "following", "others", "followers", "Pinned", "Replies", "joined", "highlights", "Follow", "Subscribe", "YouTube", "Like", "Comment", "Twitter"],
     TESSERACT_LANG: "eng",
     MIN_CONFIDENCE: 70,
 };
@@ -55,7 +45,7 @@ const generateImageHash = async (buffer: Buffer): Promise<string> => {
 
 const createImageBufferFromUrl = async (imageUrl: string): Promise<Buffer> => {
     try {
-        const response: AxiosResponse<ArrayBuffer> = await axios.get(imageUrl, {
+        const response = await axios.get<ArrayBuffer>(imageUrl, {
             responseType: 'arraybuffer',
             httpsAgent: new https.Agent({ rejectUnauthorized: true })
         });
@@ -86,20 +76,21 @@ const isValidProof = (text: string): boolean => {
 // Main function
 export const imageHandlerChat = async (chatId: number, photos: PhotoSize[]): Promise<void> => {
     console.log("IMAGE HANDLER FUNCTION");
-    await sendMessage(chatId, "Processing please wait ..🔃");
+
     if (!chatId || !Array.isArray(photos) || photos.length === 0) {
         console.error("Invalid input parameters");
-        await sendMessage(chatId, "Invalid request");
+        await sendMessage(chatId, "Invalid request. Please try again with a valid image.");
         return;
     }
+
+    await sendMessage(chatId, "Processing your image, please wait... 🔄");
 
     try {
         const fileId = photos[photos.length - 1].file_id;
         const imageUrl = await getImageUrl(fileId);
 
         if (!imageUrl) {
-            await sendMessage(chatId, "Error while getting image URL 🖼️");
-            return;
+            throw new Error("Failed to get image URL");
         }
 
         const buffer = await createImageBufferFromUrl(imageUrl);
@@ -108,95 +99,97 @@ export const imageHandlerChat = async (chatId: number, photos: PhotoSize[]): Pro
 
         const { text, confidence } = await processImage(buffer);
 
-        if (text && confidence >= config.MIN_CONFIDENCE) {
-            console.log(text)
-            console.log(`Extracted text (confidence ${confidence.toFixed(2)}%): ${text}`);
-            if (isValidProof(text)) {
-                const user = await prisma.user.findFirst({
-                    where: {
-                        telegram_id: chatId
-                    }, include: {
-                        submissions: true
-                    }
-                })
-                if (!user) {
-                    await sendMessage(chatId, `User NOT FOUND (first open the app)!`);
-                    return
+        if (!text || confidence < config.MIN_CONFIDENCE) {
+            await sendMessage(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%). Please try uploading a clearer image.`);
+            return;
+        }
 
-                }
-                const alreadyImageUploaded = await prisma.submission.findFirst({
-                    where: {
-                        user_id: user.id,
-                        proof: imageHash
-                    }
-                })
-                if (alreadyImageUploaded) {
-                    await sendMessage(chatId, `Duplicate Proof !!`);
-                    return
+        console.log(`Extracted text (confidence ${confidence.toFixed(2)}%): ${text}`);
 
-                }
-                const pending = await prisma.proof.findFirst({
+        if (!isValidProof(text)) {
+            await sendMessage(chatId, `Not a valid proof (confidence: ${confidence.toFixed(2)}%). Please ensure the image contains relevant social media content.`);
+            return;
+        }
+
+        const user = await prisma.user.findFirst({
+            where: { telegram_id: chatId },
+            include: { submissions: true }
+        });
+
+        if (!user) {
+            await sendMessage(chatId, "User not found. Please open the app first to create your account.");
+            return;
+        }
+
+        const alreadyImageUploaded = await prisma.submission.findFirst({
+            where: { user_id: user.id, proof: imageHash }
+        });
+
+        if (alreadyImageUploaded) {
+            await sendMessage(chatId, "Duplicate proof detected. Please submit a new, unique image.");
+            return;
+        }
+
+        const pending = await prisma.proof.findFirst({
+            where: { userId: user.id, telegram_id: chatId }
+        });
+
+        if (!pending) {
+            await sendMessage(chatId, "No pending submission found. Please create a submission first.");
+            return;
+        }
+        const alreadySub = await prisma.submission.findFirst({
+            where: {
+                user_id: pending.userId,
+                task_id: pending.taskId,
+                proof: imageHash,
+            }
+        })
+        if (alreadySub) {
+            await sendMessage(chatId, "Already submitted the image proof");
+            return;
+        }
+        try {
+            const result = await prisma.$transaction(async (prismaTx) => {
+                const subTask = await prismaTx.submission.create({
+                    data: {
+                        user_id: pending.userId,
+                        task_id: pending.taskId,
+                        amount: pending.amount!,
+                        proof: imageHash,
+                    }
+                });
+
+                const updatedUser = await prismaTx.user.update({
+                    where: { id: user.id },
+                    data: { points: user.points + pending.amount! }
+                });
+
+                await prismaTx.proof.delete({
                     where: {
                         userId: user.id,
-                        telegram_id: chatId,
-
+                        taskId: pending.taskId,
+                        telegram_id: chatId
                     }
-                })
-                console.log({ pending })
-                if (!pending) {
-                    await sendMessage(chatId, `NO submission found create a submission first`);
-                    return
-                }
+                });
 
-                const result = prisma.$transaction(async (prismaTx) => {
-                    const subTask = await prismaTx.submission.create({
-                        data: {
-                            user_id: pending.userId,
-                            task_id: pending.taskId,
-                            amount: pending.amount!,
+                return { subTask, updatedUser };
+            }, {
+                maxWait: 5000,
+                timeout: 10000,
+            });
 
-                            proof: imageHash,
-
-                        }
-                    })
-                    const updatedUser = await prismaTx.user.update({
-                        where: {
-                            id: user.id
-                        }, data: {
-                            points: user.points + pending.amount!
-                        }
-                    })
-
-                    const deletedProof = await prismaTx.proof.delete({
-                        where: {
-                            userId: user.id,
-                            taskId: pending.taskId,
-                            telegram_id: chatId
-                        }
-                    })
-                    return { subTask, updatedUser, deletedProof }
-                })
-                console.log(result, "RESULT ✅")
-
-
-                // await sendMessage(chatId, `submit directly`);
-
-                await sendMessage(chatId, `Valid social proof detected (confidence: ${confidence.toFixed(2)}%)`);
-
-                await sendMessage(chatId, `Congrats successfully submitted 🎉`);
-
-            } else {
-                await sendMessage(chatId, `Not a valid proof (confidence: ${confidence.toFixed(2)}%)`);
-            }
-        } else {
-            await sendMessage(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%)`);
+            console.log("Transaction result:", result);
+            await sendMessage(chatId, `Congratulations! Your submission was successful. 🎉\nYou've earned ${pending.amount} points!`);
+        } catch (transactionError) {
+            console.error("Transaction error:", transactionError);
+            await sendMessage(chatId, "An error occurred while processing your submission. Please try again later.");
         }
     } catch (error) {
         console.error("Error in imageHandlerChat:", error);
-        await sendMessage(chatId, "Error processing image");
+        await sendMessage(chatId, "An unexpected error occurred while processing your image. Please try again later.");
     }
 };
-
 // import axios from 'axios';
 
 // const TELEGRAM_API_URL = 'https://api.telegram.org/bot<YOUR_BOT_TOKEN>';

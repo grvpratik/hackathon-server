@@ -83,23 +83,6 @@ router.post("/auth/session", userMiddleware, async (req, res) => {
 
 
 
-router.get("/submission", async (req, res) => {
-    // Function to perform OCR on image
-
-    try {
-        const worker = await createWorker('eng');
-        const ret = await worker.recognize('https://api.telegram.org/file/bot6494748312:AAHjVKXP8OC_14WB_6w6kzGWHv7kSWkL0dc/photos/file_2.jpg');
-        console.log(ret.data.text);
-        await worker.terminate();
-    } catch (error) {
-        console.error(error)
-    }
-
-    res.status(200).json({
-        success: true,
-        message: "iamge text here "
-    })
-})
 
 
 
@@ -107,10 +90,6 @@ router.get("/submission", async (req, res) => {
 
 
 
-router.post("/submission", userMiddleware, async (req, res) => {
-
-
-})
 router.post("/list", userMiddleware, async (req, res) => {
     const taskList = await prisma.task.findMany({
         where: {
