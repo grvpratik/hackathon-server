@@ -290,7 +290,7 @@ router.post("/create", (req, res) => __awaiter(void 0, void 0, void 0, function*
         console.log('Received Telegram update:', JSON.stringify(body, null, 2));
         const { message, callback_query } = body;
         if (message.photo && message.chat.id) {
-            (0, image_handler_1.imageHandlerchat)(message.chat.id, message.photo);
+            (0, image_handler_1.imageHandlerChat)(message.chat.id, message.photo);
         }
         if (message && message.chat && message.text) {
             const chatId = message.chat.id;

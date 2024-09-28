@@ -21,7 +21,7 @@ function authMiddleware(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         var _a;
         const authHeader = (_a = req.headers["authorization"]) !== null && _a !== void 0 ? _a : "";
-        console.log({ authHeader });
+        // console.log({authHeader})
         // Early return if authorization header is missing
         if (!authHeader) {
             return res.status(403).json({ message: "You are not logged in" });
@@ -39,6 +39,7 @@ function authMiddleware(req, res, next) {
             next(); // Proceed to the next middleware or route handler
         }
         catch (error) {
+            console.log(error);
             return res.status(403).json({ message: "Invalid token" });
         }
     });
@@ -70,7 +71,7 @@ function userMiddleware(req, res, next) {
     switch (authType) {
         case 'tma':
             try {
-                console.log({ token });
+                // console.log({token})
                 // Validate init data.
                 (0, init_data_node_1.validate)(authData, token, {
                     // We consider init data sign valid for 1 hour from their creation moment.

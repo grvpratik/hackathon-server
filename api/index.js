@@ -20,6 +20,7 @@ const user_1 = __importDefault(require("./routes/user"));
 const payer_1 = __importDefault(require("./routes/payer"));
 const client_1 = require("@prisma/client");
 const middleware_1 = require("./middleware");
+const tasks_1 = __importDefault(require("./routes/tasks"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -31,6 +32,7 @@ exports.prisma.$connect().then(() => {
     console.error('Failed to connect to database', err);
     process.exit(1);
 });
+app.use("/v1/tasks", tasks_1.default);
 app.use("/v1/user", user_1.default);
 app.use("/v1/payer", payer_1.default);
 app.get("/", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
