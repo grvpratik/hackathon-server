@@ -11,7 +11,7 @@ import nacl from 'tweetnacl';
 
 import { Connection, PublicKey, Transaction } from "@solana/web3.js";
 import { imageHandlerChat } from '../bot/image-handler';
-import { editMessageReplyMarkup, sendMessage } from '../bot/bot-function';
+import { editMessageReplyMarkup, sendMessage } from '../services/telegram.service';
 
 const connection = new Connection(process.env.RPC_URL ?? "https://api.devnet.solana.com");
 
