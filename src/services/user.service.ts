@@ -9,15 +9,27 @@ export const UserService = {
             create: {
                 telegram_id: telegramId,
                 first_name: firstName,
-                Last_name: lastName,               
+                Last_name: lastName,
             },
         });
     },
-    async  checkUser(telgramId:number) {
+    async checkUser(telgramId: number) {
         return await prisma.user.findFirst({
             where: {
                 telegram_id: telgramId
             }
         })
+    },
+    async findUserByTelegramId(telegramId: number) {
+        return prisma.user.findFirst({
+            where: { telegram_id: telegramId },
+        });
+    }
+    ,
+    async updateUserPoints(userId: string, points: number) {
+        return prisma.user.update({
+            where: { id: userId },
+            data: { points: { increment: points } },
+        });
     }
 }

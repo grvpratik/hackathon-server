@@ -6,6 +6,7 @@ import payerRouter from './routes/payer';
 import { PrismaClient } from "@prisma/client";
 import { defaultErrorMiddleware } from "./middleware";
 import taskRouter from "./routes/tasks";
+import telegramRoute from "./routes/telegram";
 
 dotenv.config();
 
@@ -26,6 +27,8 @@ prisma.$connect().then(() => {
 app.use("/v1/tasks", taskRouter);
 app.use("/v1/user", userRouter);
 app.use("/v1/payer", payerRouter);
+////refactored
+app.use("/v1/telegram",telegramRoute)
 
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {
