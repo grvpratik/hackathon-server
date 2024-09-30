@@ -1,11 +1,11 @@
 import { createWorker, Worker } from "tesseract.js";
-import { getImageUrl, sendMessage } from "../services/telegram.service";
+
 import axios from "axios";
 import sharp from "sharp";
 import crypto from 'crypto';
 import https from 'https';
-import { prisma } from "..";
-import { config, Config, PhotoSize } from "../types";
+
+import { config } from "../types";
 
 
 export const escapeMarkdown = (text: string) => {

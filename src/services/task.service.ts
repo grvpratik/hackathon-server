@@ -40,7 +40,13 @@ export async function getTasksForPayer(payerId: string) {
         where: { payer_id: payerId },
     });
 }
-//
+
+export async function getPayerSignature(signature: string) {
+    return await prisma.task.findMany({
+        where: { signature },
+    });
+}
+
 
 export async function getTasksForUser(userId: string) {
     return await prisma.task.findMany({

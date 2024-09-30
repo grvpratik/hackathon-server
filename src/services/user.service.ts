@@ -7,16 +7,16 @@ export const UserService = {
             where: { telegram_id: telegramId },
             update: {},
             create: {
-                telegram_id: telegramId,
-                first_name: firstName,
-                Last_name: lastName,
+                telegram_id: telegramId ,
+                first_name: firstName ?? "",
+                Last_name: lastName ?? "",
             },
         });
     },
-    async checkUser(telgramId: number) {
+    async checkUser(userId: string) {
         return await prisma.user.findFirst({
             where: {
-                telegram_id: telgramId
+               id:userId
             }
         })
     },

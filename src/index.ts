@@ -1,12 +1,13 @@
 import express, { Express, Request, Response, NextFunction } from "express";
 import cors from "cors";
 import dotenv from "dotenv";
-import userRouter from './routes/user';
-import payerRouter from './routes/payer';
+
 import { PrismaClient } from "@prisma/client";
 import { defaultErrorMiddleware } from "./middleware";
-import taskRouter from "./routes/tasks";
-import telegramRoute from "./routes/telegram";
+
+import telegramRoute from "./routes/telegram.route";
+import userRoute from "./routes/user.route";
+import taskRoute from "./routes/task.route";
 
 dotenv.config();
 
@@ -24,11 +25,13 @@ prisma.$connect().then(() => {
     process.exit(1);
 });
 
-app.use("/v1/tasks", taskRouter);
-app.use("/v1/user", userRouter);
-app.use("/v1/payer", payerRouter);
+// app.use("/v1/tasks", taskRouter);
+// app.use("/v1/user", userRouter);
+// app.use("/v1/payer", payerRouter);
 ////refactored
-app.use("/v1/telegram",telegramRoute)
+app.use("/v2/telegram", telegramRoute)
+app.use("/v2/user", userRoute)
+app.use("/v2/task",taskRoute)
 
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {

@@ -10,7 +10,7 @@ const telegramRoute = Router();
 
 telegramRoute.post('/create', handleCreateRequest);
 
-telegramRoute.post('/submit', handleVerifySubmission)
+telegramRoute.post('/verify', handleVerifySubmission)
 
 
 

@@ -1,15 +1,13 @@
-import { PhotoSize } from "../types";
 
 
-import { getImageUrl, sendMessage } from "../services/telegram.service";
-import { ProofService } from "../services/proof.service";
-import { UserService } from "../services/user.service";
+import { getInitData } from "../middleware";
 import { ImageService } from "../services/image.service";
-import { isValidProof } from "../utils/chatbot";
-import { SubmissionService } from "../services/submission.service";
 import { Request, Response } from "express";
+import { UserService } from "../services/user.service";
+import { ProofService } from "../services/proof.service";
+import { sendMessage } from "../services/telegram.service";
 
-
+const POINTS=200
 export async function handleVerifySubmission(req: Request, res: Response) {
     try {
         const body = req.body;
@@ -18,7 +16,7 @@ export async function handleVerifySubmission(req: Request, res: Response) {
         const { message, callback_query } = body;
 
         if (message.photo && message.chat.id) {
-            handleImage(message.chat.id, message.photo)
+            ImageService.handleImage(message.chat.id, message.photo)
         }
 
     } catch (error) {
@@ -30,79 +28,39 @@ export async function handleVerifySubmission(req: Request, res: Response) {
 
 }
 
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-export const handleImage = async (chatId: number, photos: PhotoSize[]): Promise<void> => {
-    console.log("IMAGE HANDLER FUNCTION");
-
-    if (!chatId || !Array.isArray(photos) || photos.length === 0) {
-        console.error("Invalid input parameters");
-        await sendMessage(chatId, "Invalid request. Please try again with a valid image.");
-        return;
-    }
-
-    await sendMessage(chatId, "Processing your image, please wait... 🔄");
+export async function usertaskSubmission(req: Request, res: Response) {
+    const taskId = req.params.taskId;
+    const userData = getInitData(res);
+    const chatId = userData?.user?.id;
 
     try {
-        const fileId = photos[photos.length - 1].file_id;
-        const imageUrl = await getImageUrl(fileId);
-
-        if (!imageUrl) {
-            throw new Error("Failed to get image URL");
+        if (!chatId) {
+            return res.status(400).json({ error: 'Chat ID is required.' });
         }
 
-        const user = await UserService.findUserByTelegramId(chatId);
+
+        const user = await UserService.findUserByTelegramId(chatId)
 
         if (!user) {
-            await sendMessage(chatId, "User not found. Please open the app first to create your account.");
-            return;
+            return res.status(404).json({ error: 'User not found.' });
         }
+        await ProofService.deletePendingProof(user.id, chatId)
 
-        const pending = await ProofService.findPendingProof(user.id, chatId);
 
-        if (!pending) {
-            await sendMessage(chatId, "No pending submission found. Please create a submission first.");
-            return;
-        }
+        const submission = await ProofService.createProof(chatId, user.id, taskId, POINTS)
 
-        const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
 
-        if (!ImageService.isValidImage(text, confidence)) {
-            await sendMessage(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%). Please try uploading a clearer image.`);
-            return;
-        }
-        if (!isValidProof(text)) {
-            await sendMessage(chatId, `Not a valid proof (confidence: ${confidence.toFixed(2)}%). Please ensure the image contains relevant social media content.`);
-            return;
-        }
-        if (await SubmissionService.isDuplicateSubmission(user.id, imageHash)) {
-            await sendMessage(chatId, "Duplicate proof detected. Please submit a new, unique image.");
-            return;
-        }
+        await sendMessage(chatId, `Successfully created submission\nID: ${submission.id}\nPlease upload your proof.`);
+        return res.status(201).json({ submissionId: submission.id });
 
-        const result = await SubmissionService.createSubmission(user.id, pending, imageHash);
 
-        console.log("Transaction result:", result);
-        await sendMessage(chatId, `Congratulations! Your submission was successful. 🎉\nYou've earned ${pending.amount} points!`);
-    } catch (error) {
-        console.error("Error in imageHandlerChat:", error);
-        await sendMessage(chatId, "An unexpected error occurred while processing your image. Please try again later.");
+
+
+
     }
-};
+    catch (error) {
+        console.error('Error processing Telegram update:', error);
+        res.status(500).json({ error: 'Server error' });
+    }
+
+}
