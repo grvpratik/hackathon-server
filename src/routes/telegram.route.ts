@@ -7,9 +7,9 @@ import { handleVerifySubmission } from "../controllers/submission.controller";
 
 const telegramRoute = Router();
 
-
+//creeate task for user via payer
 telegramRoute.post('/create', handleCreateRequest);
-
+//verify the task submitted by user
 telegramRoute.post('/verify', handleVerifySubmission)
 
 

@@ -1,6 +1,7 @@
 import { Router } from "express";
-import { userMiddleware } from "../middleware";
+
 import { usertaskSubmission } from "../controllers/submission.controller";
+import { userMiddleware } from "../middlewares/user.middleware";
 
 const taskRoute = Router();
 

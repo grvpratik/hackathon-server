@@ -29,9 +29,9 @@ prisma.$connect().then(() => {
 // app.use("/v1/user", userRouter);
 // app.use("/v1/payer", payerRouter);
 ////refactored
-app.use("/v2/telegram", telegramRoute)
-app.use("/v2/user", userRoute)
-app.use("/v2/task",taskRoute)
+app.use("/v2/telegram", telegramRoute) //for payer to create task and user to verify task
+app.use("/v2/user", userRoute) //user create,user task,user profile
+app.use("/v2/task",taskRoute)//user task submittion
 
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {

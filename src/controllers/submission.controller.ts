@@ -1,11 +1,12 @@
 
 
-import { getInitData } from "../middleware";
+
 import { ImageService } from "../services/image.service";
 import { Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { ProofService } from "../services/proof.service";
 import { sendMessage } from "../services/telegram.service";
+import { getInitData } from "../middlewares/user.middleware";
 
 const POINTS=200
 export async function handleVerifySubmission(req: Request, res: Response) {

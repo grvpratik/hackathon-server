@@ -1,8 +1,9 @@
 import { prisma } from "..";
 import { Request, Response } from "express";
-import { getInitData } from "../middleware";
+
 import { UserService } from "../services/user.service";
 import { getTasksForUser } from "../services/task.service";
+import { getInitData } from "../middlewares/user.middleware";
 
 
 
