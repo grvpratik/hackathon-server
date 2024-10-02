@@ -1,10 +1,10 @@
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import nacl from 'tweetnacl';
 import { PublicKey } from "@solana/web3.js";
 import { PayerService } from '../services/payer.service';
 
 export const WalletController = {
-    async addWallet(req: Request, res: Response) {
+    async addWallet(req: Request, res: Response,next:NextFunction) {
         try {
             // @ts-ignore
             const payerId: string = req.payerId;
@@ -32,7 +32,7 @@ export const WalletController = {
             return res.status(200).json({ message: "Wallet added successfully" });
         } catch (error) {
             console.error('Error adding wallet:', error);
-            return res.status(500).json({ message: "Failed adding wallet address" });
+            next(error)
         }
     }
 };

@@ -1,5 +1,5 @@
 // src/controllers/create.controller.ts
-import { Request, Response } from 'express';
+import { NextFunction, Request, Response } from 'express';
 import { Platform, Action, State, UserState } from '../types';
 import { validateUrl } from '../utils/url-validator';
 import { checkPayer, checkPayerFound, findPayerById } from '../services/payer.service';
@@ -19,7 +19,7 @@ import { createTask, getTasksForPayer } from '../services/task.service';
 
 const userStates: Map<number, UserState> = new Map();
 
-export async function handleCreateRequest(req: Request, res: Response) {
+export async function handleCreateRequest(req: Request, res: Response,next:NextFunction) {
     try {
         const { message, callback_query } = req.body;
 
@@ -34,7 +34,7 @@ export async function handleCreateRequest(req: Request, res: Response) {
         res.status(200).json({ status: 'ok' });
     } catch (error) {
         console.error('Error processing Telegram update:', error);
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 }
 
@@ -168,6 +168,7 @@ async function handleConfirmation(chatId: number, data: any, chat: any,first_nam
                 }
             } catch (error) {
                 await sendMessage(chatId, "Order Creation failed!")
+               
             }
 
 

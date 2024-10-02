@@ -2,14 +2,14 @@
 
 
 import { ImageService } from "../services/image.service";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { ProofService } from "../services/proof.service";
 import { sendMessage } from "../services/telegram.service";
 import { getInitData } from "../middlewares/user.middleware";
 
 const POINTS=200
-export async function handleVerifySubmission(req: Request, res: Response) {
+export async function handleVerifySubmission(req: Request, res: Response,next:NextFunction) {
     try {
         const body = req.body;
         // console.log('Received Telegram update:', JSON.stringify(body, null, 2));
@@ -22,14 +22,14 @@ export async function handleVerifySubmission(req: Request, res: Response) {
 
     } catch (error) {
         console.error('Error processing Telegram update:', error);
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 
 
 
 }
 
-export async function usertaskSubmission(req: Request, res: Response) {
+export async function usertaskSubmission(req: Request, res: Response,next:NextFunction) {
     const taskId = req.params.taskId;
     const userData = getInitData(res);
     const chatId = userData?.user?.id;
@@ -61,7 +61,7 @@ export async function usertaskSubmission(req: Request, res: Response) {
     }
     catch (error) {
         console.error('Error processing Telegram update:', error);
-        res.status(500).json({ error: 'Server error' });
+        next(error);
     }
 
 }

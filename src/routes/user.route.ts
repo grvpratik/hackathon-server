@@ -10,7 +10,7 @@ userRoute.post('/auth/session',userMiddleware,userAuthentication)
 
 userRoute.get('/task', userMiddleware, userTaskList)
 
-userRoute.get('/me', userMiddleware, userInfo)
+userRoute.post('/me', userMiddleware, userInfo)
 
 
 export default userRoute;

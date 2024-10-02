@@ -1,13 +1,14 @@
 import { prisma } from "..";
-import { Request, Response } from "express";
+import { NextFunction, Request, Response } from "express";
 
 import { UserService } from "../services/user.service";
 import { getTasksForUser } from "../services/task.service";
 import { getInitData } from "../middlewares/user.middleware";
+import { nextTick } from "process";
 
 
 
-export async function userAuthentication(req: Request, res: Response) {
+export async function userAuthentication(req: Request, res: Response,next:NextFunction) {
     const client = getInitData(res);
 
     // Ensure client data is valid
@@ -26,11 +27,11 @@ export async function userAuthentication(req: Request, res: Response) {
         });
     } catch (error) {
         console.error("Error during session creation:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        next(error)
     }
 }
 
-export async function userTaskList(req: Request, res: Response) {
+export async function userTaskList(req: Request, res: Response,next:NextFunction) {
     const userData = getInitData(res);
     const chatId = userData?.user?.id;
     if (!chatId) {
@@ -51,11 +52,11 @@ export async function userTaskList(req: Request, res: Response) {
     }
     catch (error) {
         console.error("Error during session creation:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        next(error)
     }
 }
 
-export async function userInfo(req: Request, res: Response) {
+export async function userInfo(req: Request, res: Response,next:NextFunction) {
     try {
         const tgData = getInitData(res)
         const user = await UserService.findUserByTelegramId(tgData?.user!.id!)
@@ -70,6 +71,6 @@ export async function userInfo(req: Request, res: Response) {
     }
     catch (error) {
         console.error("Error during session creation:", error);
-        return res.status(500).json({ error: "Internal server error" });
+        next(error)
     }
 }

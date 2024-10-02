@@ -39,6 +39,6 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
         next();  // Proceed to the next middleware or route handler
     } catch (error) {
         console.log(error)
-        return res.status(403).json({ message: "Invalid token" });
+       next(error)
     }
 }

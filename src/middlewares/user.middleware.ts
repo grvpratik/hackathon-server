@@ -1,6 +1,7 @@
 import { NextFunction, Request, Response } from "express";
 
 import { validate, parse,  } from '@telegram-apps/init-data-node';
+import { error } from "console";
 
 const token = process.env.TELEGRAM_BOT_TOKEN!;
 
@@ -61,7 +62,7 @@ export function userMiddleware(req: Request, res: Response, next: NextFunction) 
             } catch (e) {
                 console.log("init data")
                 console.log(e)
-                return res.status(500).json({ message: "Init data expired or invalid" });
+                next(error)
             }
         // ... other authorization methods.
         default:
