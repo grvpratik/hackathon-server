@@ -48,12 +48,13 @@ export async function getPayerSignature(signature: string) {
 }
 
 
-export async function getTasksForUser(userId: string) {
+export async function getTasksForUser(userId: string,platform:Platforms) {
     return await prisma.task.findMany({
         where: {
+            platform,
             NOT: {
                 submissions: {
-                    some: {
+                    some: {  
                         user_id: userId
                     }
                 }

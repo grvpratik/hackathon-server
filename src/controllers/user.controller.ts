@@ -4,7 +4,8 @@ import { NextFunction, Request, Response } from "express";
 import { UserService } from "../services/user.service";
 import { getTasksForUser } from "../services/task.service";
 import { getInitData } from "../middlewares/user.middleware";
-import { nextTick } from "process";
+
+import { Platform } from "../types";
 
 
 
@@ -31,7 +32,14 @@ export async function userAuthentication(req: Request, res: Response,next:NextFu
     }
 }
 
-export async function userTaskList(req: Request, res: Response,next:NextFunction) {
+export async function userTaskList(req: Request, res: Response, next: NextFunction) {
+    // Check if the platform is a string before using it
+    let platformParam: string | undefined;
+
+    // Check if it's a string or an array of strings
+    if (typeof req.query.platform === 'string') {
+        platformParam = req.query.platform;
+    } const platform = platformParam as Platform;
     const userData = getInitData(res);
     const chatId = userData?.user?.id;
     if (!chatId) {
@@ -46,8 +54,8 @@ export async function userTaskList(req: Request, res: Response,next:NextFunction
             res.status(404).json({ message: "user not found" })
             return
         }
-
-        const taskList = await getTasksForUser(user.id)
+console.log({platform})
+        const taskList = await getTasksForUser(user.id,platform)
         res.status(200).json(taskList)
     }
     catch (error) {

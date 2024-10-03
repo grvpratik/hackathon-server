@@ -3,11 +3,12 @@ import cors from "cors";
 import dotenv from "dotenv";
 
 import { PrismaClient } from "@prisma/client";
-import { defaultErrorMiddleware } from "./middleware";
+
 
 import telegramRoute from "./routes/telegram.route";
 import userRoute from "./routes/user.route";
 import taskRoute from "./routes/task.route";
+import { defaultErrorMiddleware } from "./middlewares/error.middleware";
 
 dotenv.config();
 

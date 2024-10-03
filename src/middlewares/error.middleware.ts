@@ -1,7 +1,4 @@
-
-import{
-    type ErrorRequestHandler,
-} from 'express';
+import { ErrorRequestHandler } from "express";
 
 /**
  * Middleware which displays the user init data.

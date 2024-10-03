@@ -3,7 +3,7 @@ import { NextFunction, Request, Response } from "express";
 import { validate, parse,  } from '@telegram-apps/init-data-node';
 import { error } from "console";
 
-const token = process.env.TELEGRAM_BOT_TOKEN!;
+const token = process.env.TELEGRAM_BOT_USER_TOKEN!;
 
 declare module "express" {
     interface Request {
@@ -39,12 +39,12 @@ export function userMiddleware(req: Request, res: Response, next: NextFunction) 
     // <auth-type> <auth-data>
     // <auth-type> must be "tma", and <auth-data> is Telegram Mini Apps init data.
     const [authType, authData = ''] = (req.header('authorization') || '').split(' ');
-    console.log({ authData })
+   
     switch (authType) {
         case 'tma':
             try {
-                // console.log({token})
-                // Validate init data.
+                console.log({token,authData})
+                
                 validate(authData, token, {
                     // We consider init data sign valid for 1 hour from their creation moment.
                     expiresIn: 3600,
