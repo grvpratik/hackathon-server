@@ -12,13 +12,15 @@ datasource db {
   provider = "postgresql"
   url      = env("DATABASE_URL")
 }
-model Proof{
-  id          String    @id @default(uuid())
-  telegram_id BigInt    @unique
-  taskId       String
+
+model Proof {
+  id          String @id @default(uuid())
+  telegram_id BigInt @unique
+  taskId      String
   userId      String
-  amount       Int?
+  amount      Int?
 }
+
 model Payer {
   id          String    @id @default(uuid())
   telegram_id BigInt    @unique
@@ -42,62 +44,70 @@ model User {
   points        Int          @default(0)
   locked_points Int?
   last_checked  DateTime?
+  gameAccount   GameAccount?
+createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+  @@index([telegram_id])
+}
 
-  knight_lvl   Int?
-  knight_exp  Int?
+model GameAccount {
+  id         String @id @default(uuid())
+  userId     String @unique
+  user       User   @relation(fields: [userId], references: [id], onDelete: Cascade)
+  knight_lvl Int?
+  knight_exp Int?
 
-  mage_lvl  Int?
-  mage_exp  Int?
+  mage_lvl Int?
+  mage_exp Int?
 
   beast_lvl   Int?
   beast_exp   Int?
+  dungeonraid DungeonRaid[]
 
-  dungeonraid  DungeonRaid[]
-
-  createdAt     DateTime     @default(now())
-  updatedAt     DateTime     @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
-model Dungeon{
-    id        String    @id @default(uuid())
-    token_ca   String?
-    base_amount_usd  Int?
+model Dungeon {
+  id              String  @id @default(uuid())
+  token_ca        String?
+  base_amount_usd Int?
 
-    t1_token_amount BigInt?
-    t2_token_amount BigInt?
-    t3_token_amount BigInt?
+  t1_token_amount BigInt?
+  t2_token_amount BigInt?
+  t3_token_amount BigInt?
 
-    t1_usd_amount BigInt?
-    t2_usd_amount BigInt?
-    t3_usd_amount BigInt?
+  t1_usd_amount BigInt?
+  t2_usd_amount BigInt?
+  t3_usd_amount BigInt?
 
-      dungeonraid  DungeonRaid[]
-  name             String
-  description      String
-  entryTokens      Int // Tokens required to enter
-  timeToComplete   Int // In seconds
-  minimumLevel     Int @default(1)
-   isActive         Boolean      @default(true)
+  dungeonraid    DungeonRaid[]
+  name           String
+  description    String
+  entryTokens    Int // Tokens required to enter
+  timeToComplete Int // In seconds
+  minimumLevel   Int           @default(1)
+  isActive       Boolean       @default(true)
 }
-model DungeonRaid{
-   id        String    @id @default(uuid())
 
-  user        User  @relation(fields: [userId], references: [id])
-  userId      String
-  dungeon     Dungeon   @relation(fields: [dungeonId], references: [id])
+model DungeonRaid {
+  id String @id @default(uuid())
+
+  game        GameAccount @relation(fields: [gameId], references: [id])
+  gameId      String
+  dungeon     Dungeon     @relation(fields: [dungeonId], references: [id])
   dungeonId   String
-  startTime   DateTime  @default(now())
+  startTime   DateTime    @default(now())
   endTime     DateTime
-  completed   Boolean   @default(false)
-  claimed     Boolean   @default(false)
-  rewardTier  String?   // "base", "silver", or "gold"
+  completed   Boolean     @default(false)
+  claimed     Boolean     @default(false)
+  rewardTier  String? // "base", "silver", or "gold"
   experience  Int?
   tokenAmount Float?
-  createdAt   DateTime  @default(now())
+  createdAt   DateTime    @default(now())
 
-  @@index([userId, completed, claimed])
+  @@index([gameId, completed, claimed])
   @@index([endTime])
-
 }
 
 model Task {
@@ -164,7 +174,6 @@ enum Platforms {
   discord
   telegram
 }
-
 
 // model GameUser {
 //   id            String        @id @default(uuid())

@@ -9,6 +9,7 @@ import telegramRoute from "./routes/telegram.route";
 import userRoute from "./routes/user.route";
 import taskRoute from "./routes/task.route";
 import { defaultErrorMiddleware } from "./middlewares/error.middleware";
+import gameRoute from "./routes/game.route";
 
 dotenv.config();
 
@@ -32,7 +33,8 @@ prisma.$connect().then(() => {
 ////refactored
 app.use("/v2/telegram", telegramRoute) //for payer to create task and user to verify task
 app.use("/v2/user", userRoute) //user create,user task,user profile
-app.use("/v2/task",taskRoute)//user task submittion
+app.use("/v2/task", taskRoute)//user task submittion
+app.use("/v2/game", gameRoute)//user task submittion
 
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {

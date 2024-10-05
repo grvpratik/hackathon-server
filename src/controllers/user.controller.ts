@@ -6,10 +6,11 @@ import { getTasksForUser } from "../services/task.service";
 import { getInitData } from "../middlewares/user.middleware";
 
 import { Platform } from "../types";
+import { createSessionToken, verifySessionToken } from "../utils/jwt";
 
 
 
-export async function userAuthentication(req: Request, res: Response,next:NextFunction) {
+export async function userAuthentication(req: Request, res: Response, next: NextFunction) {
     const client = getInitData(res);
 
     // Ensure client data is valid
@@ -18,20 +19,48 @@ export async function userAuthentication(req: Request, res: Response,next:NextFu
     }
 
     try {
-        UserService.checkOrCreateUser(client.user.id, client.user.firstName, client.user.username)
+        const user = await UserService.checkOrCreateUser(client.user.id, client.user.firstName, client.user.username)
 
-        // const token = createSessionToken(user.id, user.telegram_id)
+        const token = await createSessionToken(user.id, user.telegram_id)
 
         return res.status(200).json({
             success: true,
-
+            token
         });
     } catch (error) {
         console.error("Error during session creation:", error);
         next(error)
     }
 }
+export async function userVerification(req: Request, res: Response, next: NextFunction) {
+    const token = req.query.platform as string
+    if (!token) {
+        return res.status(400).json({
+            success: false,
+            message: "need token"
+        });
+    }
+    try {
+        const payload = await verifySessionToken(token)
+        if (payload) {
+            return res.status(200).json({
+                success: true,
+                message: "Verification successfully"
 
+            });
+        } else {
+            return res.status(400).json({
+                success: false,
+                message: "Verification failed"
+            });
+        }
+
+
+    } catch (error) {
+        console.error("Error during session creation:", error);
+        next(error)
+    }
+}
 export async function userTaskList(req: Request, res: Response, next: NextFunction) {
     // Check if the platform is a string before using it
     let platformParam: string | undefined;
@@ -54,8 +83,8 @@ export async function userTaskList(req: Request, res: Response, next: NextFuncti
             res.status(404).json({ message: "user not found" })
             return
         }
-console.log({platform})
-        const taskList = await getTasksForUser(user.id,platform)
+        console.log({ platform })
+        const taskList = await getTasksForUser(user.id, platform)
         res.status(200).json(taskList)
     }
     catch (error) {
@@ -64,7 +93,7 @@ console.log({platform})
     }
 }
 
-export async function userInfo(req: Request, res: Response,next:NextFunction) {
+export async function userInfo(req: Request, res: Response, next: NextFunction) {
     try {
         const tgData = getInitData(res)
         const user = await UserService.findUserByTelegramId(tgData?.user!.id!)
@@ -78,7 +107,7 @@ export async function userInfo(req: Request, res: Response,next:NextFunction) {
         })
     }
     catch (error) {
-        console.error("Error during session creation:", error);
+        console.error("Error getting user info:", error);
         next(error)
     }
 }
