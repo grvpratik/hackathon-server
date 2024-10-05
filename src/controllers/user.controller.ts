@@ -20,7 +20,7 @@ export async function userAuthentication(req: Request, res: Response, next: Next
 
     try {
         const user = await UserService.checkOrCreateUser(client.user.id, client.user.firstName, client.user.username)
-
+      
         const token = await createSessionToken(user.id, user.telegram_id)
 
         return res.status(200).json({

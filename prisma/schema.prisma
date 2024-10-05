@@ -45,8 +45,9 @@ model User {
   locked_points Int?
   last_checked  DateTime?
   gameAccount   GameAccount?
-createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
   @@index([telegram_id])
 }
 
@@ -105,9 +106,16 @@ model DungeonRaid {
   experience  Int?
   tokenAmount Float?
   createdAt   DateTime    @default(now())
+  status      RaidStatus
 
   @@index([gameId, completed, claimed])
   @@index([endTime])
+}
+
+enum RaidStatus {
+  active
+  completed
+  claimed
 }
 
 model Task {
