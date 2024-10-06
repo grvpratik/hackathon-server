@@ -1,3 +1,30 @@
+export const resetUnitForLegendary = (lvl: number, exp?: number) => {
+
+    return Math.max(1, Math.floor(lvl / 2))
+}
+export const calculateExpToNextLevel = (level: number): number =>
+    100 * Math.pow(2, level - 1);
+
+export const addExpToLvl = (lvl: number, currExp: number, gainExp: number) => {
+    let newLevel = lvl;
+    let newExp = currExp + gainExp;
+    let leveledUp = false;
+
+    while (newExp >= calculateExpToNextLevel(newLevel)) {
+        newExp -= calculateExpToNextLevel(newLevel);
+        newLevel++;
+        leveledUp = true;
+    }
+
+    return { newLevel, newExp }
+};
+// export const calculateVictoryChance = (units: readonly Unit[], dungeonDifficulty: number): number => {
+//     const avgLevel = units.reduce((sum, unit) => sum + unit.level, 0) / units.length;
+//     const levelFactor = 0.5 * (avgLevel / dungeonDifficulty);
+//     const luckFactor = 0.5;
+//     return Math.min(0.95, levelFactor + Math.random() * luckFactor);
+// };
+
 // // src/game/dungeonLogic.ts
 // import { PrismaClient } from '@prisma/client'
 // const prisma = new PrismaClient()

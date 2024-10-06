@@ -2,14 +2,14 @@ import { Router } from "express";
 
 
 import { userMiddleware } from "../middlewares/user.middleware";
-import { activeDungeonRaid, claimDungeonReward, gameAccountInfo, gameDungeonList, startDungeonRaid } from "../controllers/game.controller";
+import {  claimDungeonReward, gameAccountInfo,  gameDungeonList,  getActiveRaids,  startDungeonRaid } from "../controllers/game.controller";
 
 const gameRoute = Router();
 
 
-gameRoute.post('/me', userMiddleware,gameAccountInfo)
-gameRoute.post('/', userMiddleware,gameDungeonList)//fetch dungeons
-gameRoute.post('/', userMiddleware,activeDungeonRaid)//fetch active raid
-gameRoute.post('/', userMiddleware,startDungeonRaid)//enter raid 
-gameRoute.post('/', userMiddleware,claimDungeonReward)
+gameRoute.get('/me', gameAccountInfo)
+gameRoute.get('/dungeons', gameDungeonList)//fetch dungeons
+gameRoute.get('/raid/active', getActiveRaids)//fetch active raid
+gameRoute.get('/dungeon/start', startDungeonRaid)//enter raid 
+gameRoute.get('/', claimDungeonReward)
 export default gameRoute;

@@ -78,37 +78,45 @@ model Dungeon {
   t2_token_amount BigInt?
   t3_token_amount BigInt?
 
-  t1_usd_amount BigInt?
-  t2_usd_amount BigInt?
-  t3_usd_amount BigInt?
+  t1_usd_amount  BigInt?
+  t2_usd_amount  BigInt?
+  t3_usd_amount  BigInt?
+  baseReward     RewardTier @relation("BaseReward", fields: [baseRewardId], references: [id])
+  baseRewardId   String
+  silverReward   RewardTier @relation("SilverReward", fields: [silverRewardId], references: [id])
+  silverRewardId String
+  goldReward     RewardTier @relation("GoldReward", fields: [goldRewardId], references: [id])
 
-  dungeonraid    DungeonRaid[]
-  name           String
-  description    String
-  entryTokens    Int // Tokens required to enter
-  timeToComplete Int // In seconds
-  minimumLevel   Int           @default(1)
-  isActive       Boolean       @default(true)
+  goldRewardId String
+
+  diamondReward   RewardTier    @relation("DiamondReward", fields: [diamondRewardId], references: [id])
+  diamondRewardId String
+  dungeonraid     DungeonRaid[]
+  name            String
+  description     String
+  entryPoints     Int // Tokens required to enter
+  timeToComplete  Int // In seconds
+  minimumLevel    Int           @default(1)
+  isActive        Boolean       @default(true)
 }
 
 model DungeonRaid {
   id String @id @default(uuid())
 
-  game        GameAccount @relation(fields: [gameId], references: [id])
-  gameId      String
-  dungeon     Dungeon     @relation(fields: [dungeonId], references: [id])
-  dungeonId   String
-  startTime   DateTime    @default(now())
-  endTime     DateTime
-  completed   Boolean     @default(false)
-  claimed     Boolean     @default(false)
-  rewardTier  String? // "base", "silver", or "gold"
+  game      GameAccount @relation(fields: [gameId], references: [id])
+  gameId    String
+  dungeon   Dungeon     @relation(fields: [dungeonId], references: [id])
+  dungeonId String
+  startTime DateTime    @default(now())
+  endTime   DateTime
+
+  rewardTier  RewardName?// "base", "silver", or "gold"
   experience  Int?
   tokenAmount Float?
-  createdAt   DateTime    @default(now())
+  createdAt   DateTime   @default(now())
   status      RaidStatus
 
-  @@index([gameId, completed, claimed])
+  @@index([gameId, status])
   @@index([endTime])
 }
 
@@ -182,6 +190,25 @@ enum Platforms {
   discord
   telegram
 }
+model RewardTier {
+  id                 String    @id @default(uuid())
+  name               RewardName
+  tokenAmount        Float
+  tokenContract      String // Solana token contract address
+  baseDropRate       Float // Base probability (0-1)
+  levelScalingFactor Float // How much level affects drop rate
+  asBaseReward       Dungeon[] @relation("BaseReward")
+  asSilverReward     Dungeon[] @relation("SilverReward")
+  asGoldReward       Dungeon[] @relation("GoldReward")
+  asDiamondReward    Dungeon[] @relation("DiamondReward")
+}
+
+enum RewardName {
+  base
+  silver
+  gold
+  diamond
+}
 
 // model GameUser {
 //   id            String        @id @default(uuid())
@@ -224,17 +251,6 @@ enum Platforms {
 //   @@index([difficultyLevel])
 // }
 
-// model RewardTier {
-//   id                String     @id @default(uuid())
-//   name              String
-//   tokenAmount       Float
-//   tokenContract     String     // Solana token contract address
-//   baseDropRate      Float      // Base probability (0-1)
-//   levelScalingFactor Float     // How much level affects drop rate
-//   asBaseReward      Dungeon[]  @relation("BaseReward")
-//   asSilverReward    Dungeon[]  @relation("SilverReward")
-//   asGoldReward      Dungeon[]  @relation("GoldReward")
-// }
 
 // model DungeonRaid {
 //   id          String    @id @default(uuid())
