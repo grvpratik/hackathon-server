@@ -1,7 +1,7 @@
 import axios, { AxiosError } from 'axios';
 
 import { Platform, Action, State, UserState } from '../types';
-import { TELEGRAM_API_URL, TELEGRAM_BOT_TOKEN } from '../config/constant';
+import { TELEGRAM_API_URL, TELEGRAM_BOT_TOKEN, TELEGRAM_BOT_USER_TOKEN, TELEGRAM_USER_API_URL } from '../config/constant';
 
 export function getInitialKeyboard() {
     return {
@@ -96,7 +96,29 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
 
     }
 }
+export async function sendMessageUser(chatId: number, text: string, options = {}) {
+    try {
+        if (!TELEGRAM_USER_API_URL) {
+            throw new Error('TELEGRAM_USER_API_URL is not defined');
+        }
 
+        const response = await axios.post(`${TELEGRAM_USER_API_URL}/sendMessage`, {
+            chat_id: chatId,
+            text,
+            ...options,
+        });
+        return response.data;
+    } catch (error) {
+        console.error("SEND MESSAGE ERROR", error);
+        if (axios.isAxiosError(error)) {
+            console.error('Error sending message to Telegram:', error.response?.data || error.message);
+            if (error.code === 'ECONNABORTED') {
+                console.error('The request timed out');
+            }
+        }
+        throw error;
+    }
+}
 export async function editMessageReplyMarkup(chatId: number, messageId: number) {
     try {
         const response = await axios.post(`${TELEGRAM_API_URL}/editMessageReplyMarkup`, {
@@ -115,14 +137,14 @@ export async function editMessageReplyMarkup(chatId: number, messageId: number) 
     }
 }
 export async function getImageUrl(fileId: string) {
-    const fileResponse = await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`);
+    const fileResponse = await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN}/getFile?file_id=${fileId}`);
     if (fileResponse.status !== 200) {
         console.log("error while fetching image")
         return null
     }
     const filePath = (await fileResponse.data).result.file_path;
     if (filePath) {
-        const imageUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`;
+        const imageUrl = `https://api.telegram.org/file/bot${TELEGRAM_BOT_USER_TOKEN}/${filePath}`;
         return imageUrl
     } else {
         return null
@@ -130,9 +152,9 @@ export async function getImageUrl(fileId: string) {
 
 }
 export async function getFilePath(fileId:string) {
-    return await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN}/getFile?file_id=${fileId}`);
+    return await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN}/getFile?file_id=${fileId}`);
 }
 
 export async function getFileUrl(filePath: string) {
-    return `https://api.telegram.org/file/bot${TELEGRAM_BOT_TOKEN}/${filePath}`
+    return `https://api.telegram.org/file/bot${TELEGRAM_BOT_USER_TOKEN}/${filePath}`
 }

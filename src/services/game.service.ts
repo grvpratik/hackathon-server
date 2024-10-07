@@ -9,7 +9,23 @@ export async function gameAccInfo(userId: string) {
     })
 }
 
+export async function createGameAccount(userId: string) {
 
+    const gameacc = await prisma.gameAccount.create({
+        data: {
+            userId: userId,
+
+            knight_lvl: 1,
+            knight_exp: 0,
+            mage_lvl: 1,
+            mage_exp: 0,
+            beast_lvl: 1,
+            beast_exp: 0,
+        },
+        
+    });
+    return gameacc
+}
 export async function getdungeonList(userId?: string) {
     return await prisma.dungeon.findMany();
 }
@@ -20,8 +36,8 @@ export async function getdungeonById(dungeonId?: string) {
         }
     });
 }
-export async function createRaid(userId: string,gameId:string, entryTokens: number,dungeonId:string,endTime:Date) {
-     await prisma.$transaction(async (prisma) => {
+export async function createRaid(userId: string, gameId: string, entryTokens: number, dungeonId: string, endTime: Date) {
+    await prisma.$transaction(async (prisma) => {
         // Deduct tokens and energy
         await prisma.user.update({
             where: { id: userId },
@@ -32,10 +48,10 @@ export async function createRaid(userId: string,gameId:string, entryTokens: numb
             }
         })
 
-     return  await  prisma.dungeonRaid.create({
-           data: {
-                status:RaidStatus.active,
-                gameId:gameId,
+        return await prisma.dungeonRaid.create({
+            data: {
+                status: RaidStatus.active,
+                gameId: gameId,
                 dungeonId,
                 endTime
             }

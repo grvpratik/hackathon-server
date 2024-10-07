@@ -3,7 +3,8 @@ import { prisma } from "..";
 
 export const UserService = {
     async checkOrCreateUser(telegramId: number, firstName?: string, lastName?: string, address?: string) {
-        const user= await prisma.user.upsert({
+
+        const user = await prisma.user.upsert({
             where: { telegram_id: telegramId },
             update: {},
             create: {
@@ -12,25 +13,16 @@ export const UserService = {
                 last_name: lastName ?? "",
 
             },
+            include: {
+                gameAccount: true
+            }
         });
-      
-        if (user.createdAt === user.updatedAt) { 
-            await prisma.gameAccount.create({
-                data: {
-                    userId: user.id,
-                   
-                    knight_lvl: 1, 
-                    knight_exp: 0,
-                    mage_lvl: 1,
-                    mage_exp: 0,
-                    beast_lvl: 1,
-                    beast_exp: 0,
-                },
-            });
-        }
+
+
+
         return user;
     },
-   
+
     async checkUser(userId: string) {
         return await prisma.user.findFirst({
             where: {

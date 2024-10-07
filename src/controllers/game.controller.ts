@@ -388,16 +388,28 @@ export async function gameAccountInfo(req: Request, res: Response) {
     try {
         const client = getInitData(res);
         console.log(client)
-        // Ensure client data is valid
+      
         if (!client?.user?.id) {
             return res.status(400).json({ error: "Invalid client data" });
         }
 
 
         let user = await prisma.user.findUnique({
-            where: { telegram_id: BigInt(!client?.user?.id) },
+            where: { telegram_id: BigInt(client?.user?.id) },
             include: { gameAccount: true }
         });
+        console.log(user)
+        if (user) {
+            return res.json({
+            success: true,
+            data: user.gameAccount
+        });
+        } else {
+            return res.json({
+                success: false,
+                message:"user not found "
+            });
+        }
 
         // if (!user) {
         //     // Create new user and game account if doesn't exist
@@ -420,10 +432,7 @@ export async function gameAccountInfo(req: Request, res: Response) {
         //     });
         // }
 
-        return res.json({
-            success: true,
-            data: user
-        });
+        
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: "Internal server error" });

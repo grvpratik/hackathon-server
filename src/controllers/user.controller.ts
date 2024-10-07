@@ -1,4 +1,4 @@
-import { prisma } from "..";
+
 import { NextFunction, Request, Response } from "express";
 
 import { UserService } from "../services/user.service";
@@ -7,6 +7,7 @@ import { getInitData } from "../middlewares/user.middleware";
 
 import { Platform } from "../types";
 import { createSessionToken, verifySessionToken } from "../utils/jwt";
+import { createGameAccount } from "../services/game.service";
 
 
 
@@ -20,12 +21,16 @@ export async function userAuthentication(req: Request, res: Response, next: Next
 
     try {
         const user = await UserService.checkOrCreateUser(client.user.id, client.user.firstName, client.user.username)
-      
-        const token = await createSessionToken(user.id, user.telegram_id)
 
+        const token = await createSessionToken(user.id, user.telegram_id)
+        if (!user.gameAccount) {
+
+            await createGameAccount(user.id)
+        }
         return res.status(200).json({
             success: true,
-            token
+            token,
+
         });
     } catch (error) {
         console.error("Error during session creation:", error);
