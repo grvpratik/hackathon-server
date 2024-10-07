@@ -17,13 +17,13 @@ export interface User {
 export interface GameAccount {
     id: string;
     userId: string;
-    knight_lvl?: number |null;
+    knight_lvl?: number | null;
     knight_exp?: number | null;
     mage_lvl?: number | null;
     mage_exp?: number | null;
     beast_lvl?: number | null;
     beast_exp?: number | null;
-    
+
 }
 
 export interface Dungeon {
@@ -275,6 +275,38 @@ export interface ApiResponse<T> {
 
 
 // }
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
 class RewardSystem {
     private static BASE_LUCK_FACTOR = 0.5; // 50% luck
     private static LEVEL_FACTOR = 0.5; // 50% level-based
@@ -355,7 +387,7 @@ class RewardSystem {
 export async function gameAccountInfo(req: Request, res: Response) {
     try {
         const client = getInitData(res);
-
+        console.log(client)
         // Ensure client data is valid
         if (!client?.user?.id) {
             return res.status(400).json({ error: "Invalid client data" });
@@ -590,10 +622,10 @@ export async function claimDungeonReward(req: Request, res: Response) {
                         knight_lvl: knightExp.newLevel,
                         knight_exp: knightExp.newExp,
                         beast_lvl: beastExp.newLevel,
-                        beast_exp:beastExp.newExp,
+                        beast_exp: beastExp.newExp,
                         mage_lvl: mageExp.newLevel,
                         mage_exp: mageExp.newExp,
-                        
+
                     }
                 })
             ]);

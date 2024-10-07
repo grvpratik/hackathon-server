@@ -33,7 +33,7 @@ export async function userAuthentication(req: Request, res: Response, next: Next
     }
 }
 export async function userVerification(req: Request, res: Response, next: NextFunction) {
-    const token = req.query.platform as string
+    const token = req.query.token as string
     if (!token) {
         return res.status(400).json({
             success: false,

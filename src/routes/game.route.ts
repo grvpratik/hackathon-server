@@ -7,9 +7,9 @@ import {  claimDungeonReward, gameAccountInfo,  gameDungeonList,  getActiveRaids
 const gameRoute = Router();
 
 
-gameRoute.get('/me', gameAccountInfo)
-gameRoute.get('/dungeons', gameDungeonList)//fetch dungeons
-gameRoute.get('/raid/active', getActiveRaids)//fetch active raid
-gameRoute.get('/dungeon/start', startDungeonRaid)//enter raid 
-gameRoute.get('/', claimDungeonReward)
+gameRoute.post('/me',userMiddleware, gameAccountInfo)
+gameRoute.post('/dungeons', userMiddleware, gameDungeonList)//fetch dungeons
+gameRoute.post('/raid/active', userMiddleware, getActiveRaids)//fetch active raid
+gameRoute.post('/:dungeonId/start', userMiddleware, startDungeonRaid)//enter raid 
+gameRoute.post('/:raidId/claim', userMiddleware, claimDungeonReward)
 export default gameRoute;

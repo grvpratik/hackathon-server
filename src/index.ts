@@ -27,18 +27,84 @@ prisma.$connect().then(() => {
     process.exit(1);
 });
 
-// app.use("/v1/tasks", taskRouter);
-// app.use("/v1/user", userRouter);
-// app.use("/v1/payer", payerRouter);
-////refactored
+
 app.use("/v2/telegram", telegramRoute) //for payer to create task and user to verify task
 app.use("/v2/user", userRoute) //user create,user task,user profile
 app.use("/v2/task", taskRoute)//user task submittion
 app.use("/v2/game", gameRoute)//user task submittion
+export async function createRewardTiers() {
+    try {
+        const baseReward = await prisma.rewardTier.create({
+            data: {
+                name: 'base',
+                tokenAmount: 100,
+                tokenContract: 'BaseTokenContractAddress',
+                baseDropRate: 0.97,  // 97% chance
+                levelScalingFactor: 0.1,
+            }
+        });
 
+        const silverReward = await prisma.rewardTier.create({
+            data: {
+                name: 'silver',
+                tokenAmount: 200,
+                tokenContract: 'SilverTokenContractAddress',
+                baseDropRate: 0.02,  // 2% chance
+                levelScalingFactor: 0.2,
+            }
+        });
+
+        const goldReward = await prisma.rewardTier.create({
+            data: {
+                name: 'gold',
+                tokenAmount: 300,
+                tokenContract: 'GoldTokenContractAddress',
+                baseDropRate: 0.01,  // 1% chance
+                levelScalingFactor: 0.3,
+            }
+        });
+
+        const diamondReward = await prisma.rewardTier.create({
+            data: {
+                name: 'diamond',
+                tokenAmount: 500,
+                tokenContract: 'DiamondTokenContractAddress',
+                baseDropRate: 0.005,  // 0.5% chance
+                levelScalingFactor: 0.4,
+            }
+        });
+
+        return { baseReward, silverReward, goldReward, diamondReward };
+    } catch (error) {
+        console.error('Error creating reward tiers:', error);
+        throw new Error('Could not create reward tiers');
+    }
+}
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {
-        res.status(200).send("get request here");
+        const { baseReward, silverReward, goldReward, diamondReward } = await createRewardTiers();
+
+        // Now, create the dungeon using the reward tier IDs
+        const dungeon = await prisma.dungeon.create({
+            data: {
+                name: "Dark Cave 6",
+                description: "A mysterious cave filled with unknown dangers.",
+                entryPoints: 100,       // Tokens required to enter
+                timeToComplete: 3600,   // Time to complete (in seconds)
+                minimumLevel: 0,        // Minimum level required to enter
+                baseRewardId: baseReward.id,  // Use the created base reward ID
+                silverRewardId: silverReward.id, // Use the created silver reward ID
+                goldRewardId: goldReward.id, // Use the created gold reward ID
+                diamondRewardId: diamondReward.id, // Use the created diamond reward ID
+                isActive: true,
+            }
+        });
+
+        console.log('Dungeon created:', dungeon);
+        
+
+
+        res.status(200).json(dungeon);
     } catch (error) {
         next(error);
     }

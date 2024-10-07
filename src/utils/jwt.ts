@@ -12,8 +12,9 @@ export async function createPaymentToken(payerId: string, taskId: string): Promi
         .sign(secret);
 }
 
-export async function createSessionToken(id: string, tg_id:bigint) {
-    const jwt = await new jose.SignJWT({ id, tg_id })
+export async function createSessionToken(id: string, tg_id: any) {
+    const telegramId=tg_id.toString()
+    const jwt = await new jose.SignJWT({ id, telegramId })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
         .setExpirationTime('30day')
