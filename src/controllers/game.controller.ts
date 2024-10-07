@@ -458,7 +458,7 @@ export async function gameDungeonList(req: Request, res: Response) {
 export async function getActiveRaids(req: Request, res: Response) {
     try {
         const client = getInitData(res);
-
+       
         // Ensure client data is valid
         if (!client?.user?.id) {
             return res.status(400).json({ error: "Invalid client data" });
@@ -494,8 +494,10 @@ export async function getActiveRaids(req: Request, res: Response) {
 }
 
 export async function startDungeonRaid(req: Request, res: Response) {
+
+    const dungeonId = req.params.dungeonId;
     try {
-        const { dungeonId } = req.body;
+       
         const client = getInitData(res);
 
         // Ensure client data is valid
@@ -507,33 +509,41 @@ export async function startDungeonRaid(req: Request, res: Response) {
             where: { telegram_id: BigInt(client.user.id) },
             include: { gameAccount: true }
         });
-
-        if (!user?.gameAccount) {
+console.log({user})
+        if (!user!.gameAccount) {
             return res.status(400).json({ success: false, error: "Game account not found" });
         }
-
+        const exRaid = await prisma.dungeonRaid.findFirst({
+            where: {
+                dungeonId: dungeonId,
+                gameId:user?.gameAccount.id
+            }
+        })
+        if (exRaid) {
+            return res.status(400).json({ success: false, error: "raid already created" });
+        }
         const dungeon = await prisma.dungeon.findUnique({
             where: { id: dungeonId }
         });
-
+console.log({dungeon})
         if (!dungeon) {
             return res.status(400).json({ success: false, error: "Dungeon not found" });
         }
 
-        // Check if user meets requirements
-        if (user.gameAccount.knight_lvl! < dungeon.minimumLevel) {
-            return res.status(400).json({ success: false, error: "Level requirement not met" });
-        }
+        // // Check if user meets requirements
+        // if (user!.gameAccount.knight_lvl! < dungeon.minimumLevel) {
+        //     return res.status(400).json({ success: false, error: "Level requirement not met" });
+        // }
 
-        if (user.points < dungeon.entryPoints) {
-            return res.status(400).json({ success: false, error: "Not enough tokens" });
-        }
+        // if (user!.points < dungeon.entryPoints) {
+        //     return res.status(400).json({ success: false, error: "Not enough tokens" });
+        // }
 
         // Start raid
         const raid = await prisma.dungeonRaid.create({
             data: {
 
-                gameId: user.gameAccount.id,
+                gameId: user!.gameAccount.id,
                 dungeonId: dungeon.id,
                 endTime: new Date(Date.now() + dungeon.timeToComplete * 1000),
                 status: 'active'
@@ -545,9 +555,9 @@ export async function startDungeonRaid(req: Request, res: Response) {
 
         // Deduct tokens
         await prisma.user.update({
-            where: { id: user.id },
+            where: { id: user!.id },
             data: {
-                points: user.points - dungeon.entryPoints
+                points: user!.points - dungeon.entryPoints
             }
         });
 
