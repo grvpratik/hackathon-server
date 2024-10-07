@@ -15,6 +15,7 @@ declare module "express" {
     interface Request {
         payerId?: string;
         taskId?: string;
+        amount?: number;
     }
 }
 
@@ -29,13 +30,14 @@ export async function authMiddleware(req: Request, res: Response, next: NextFunc
     try {
         // Function to verify JWT token
         const { payload } = await jwtVerify(authHeader, secret);
-        if (!payload || !payload.payerId || !payload.taskId) {
+        if (!payload || !payload.payerId || !payload.taskId || !payload.amount) {
             return res.status(403).json({ message: "Invalid token payload" });
         }
         console.log(payload.payerId)
         // Assign values to the extended req properties
         req.payerId = payload.payerId as string;
         req.taskId = payload.taskId as string;
+        req.amount = payload.amount as number;
         next();  // Proceed to the next middleware or route handler
     } catch (error) {
         console.log(error)

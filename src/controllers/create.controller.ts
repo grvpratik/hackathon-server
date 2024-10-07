@@ -163,7 +163,7 @@ async function handleConfirmation(chatId: number, data: any, chat: any,first_nam
                      
                        Action: ${userState.platformAction?.action}\n
                        URL: ${userState.url}\n
-                       Price: $${userState.price}\n
+                       Price: ${userState.price}SOL\n
                        Payment link:${BASE_URL}?token=${token}`);
                 }
             } catch (error) {
@@ -199,7 +199,7 @@ async function handleListCommand(chatId:number) {
         const taskMessage = `
 *📌 Task Name*: ${escapeMarkdown(x.task_name)}\n
 *🖥️ Platform*: ${escapeMarkdown(x.platform)}\n
-*💰 Amount*: \$${escapeMarkdown(x.amount.toString())}\n
+*💰 Amount*: \ ${escapeMarkdown(x.amount.toString())}SOL\n
 *🔗 Link*: ${x.task_link ? `[Click here](${escapeMarkdown(x.task_link)})` : 'No link provided'}\n
 *💵 Payment*: ${x.signature ? '✅ Done' : '❌ Not done'}\n
 *⏳ Status*: ${x.status === 'Hold' ? '⏸️ On Hold' : escapeMarkdown(x.status!)}
@@ -234,7 +234,7 @@ async function handleUserConfirmation(
         const endDate = new Date()
         const task = await createTask(payerId, platform, taskName, amount, signature, taskLink, endDate, comment);
         console.log('Task created on user confirmation:', task);
-        const token = await createPaymentToken(payerId, task.id)
+        const token = await createPaymentToken(payerId, task.id,amount)
         return { task, token };
     } catch (error) {
         console.error('Error handling user confirmation:', error);

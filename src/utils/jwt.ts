@@ -4,8 +4,8 @@ import { SECRET_KEY } from '../config/constant';
 
 const secret = new TextEncoder().encode(SECRET_KEY);
 
-export async function createPaymentToken(payerId: string, taskId: string): Promise<string> {
-    return await new jose.SignJWT({ payerId, taskId })
+export async function createPaymentToken(payerId: string, taskId: string,amount:number): Promise<string> {
+    return await new jose.SignJWT({ payerId, taskId,amount })
         .setProtectedHeader({ alg: 'HS256' })
         .setIssuedAt()
         .setExpirationTime('2h')

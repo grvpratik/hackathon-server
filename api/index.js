@@ -13,14 +13,16 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.prisma = void 0;
+exports.createRewardTiers = createRewardTiers;
 const express_1 = __importDefault(require("express"));
 const cors_1 = __importDefault(require("cors"));
 const dotenv_1 = __importDefault(require("dotenv"));
-const user_1 = __importDefault(require("./routes/user"));
-const payer_1 = __importDefault(require("./routes/payer"));
 const client_1 = require("@prisma/client");
-const middleware_1 = require("./middleware");
-const tasks_1 = __importDefault(require("./routes/tasks"));
+const telegram_route_1 = __importDefault(require("./routes/telegram.route"));
+const user_route_1 = __importDefault(require("./routes/user.route"));
+const task_route_1 = __importDefault(require("./routes/task.route"));
+const error_middleware_1 = require("./middlewares/error.middleware");
+const game_route_1 = __importDefault(require("./routes/game.route"));
 dotenv_1.default.config();
 const app = (0, express_1.default)();
 app.use(express_1.default.json());
@@ -32,19 +34,84 @@ exports.prisma.$connect().then(() => {
     console.error('Failed to connect to database', err);
     process.exit(1);
 });
-app.use("/v1/tasks", tasks_1.default);
-app.use("/v1/user", user_1.default);
-app.use("/v1/payer", payer_1.default);
+app.use("/v2/telegram", telegram_route_1.default); //for payer to create task and user to verify task
+app.use("/v2/user", user_route_1.default); //user create,user task,user profile
+app.use("/v2/task", task_route_1.default); //user task submittion
+app.use("/v2/game", game_route_1.default); //user task submittion
+function createRewardTiers() {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const baseReward = yield exports.prisma.rewardTier.create({
+                data: {
+                    name: 'base',
+                    tokenAmount: 100,
+                    tokenContract: 'BaseTokenContractAddress',
+                    baseDropRate: 0.97, // 97% chance
+                    levelScalingFactor: 0.1,
+                }
+            });
+            const silverReward = yield exports.prisma.rewardTier.create({
+                data: {
+                    name: 'silver',
+                    tokenAmount: 200,
+                    tokenContract: 'SilverTokenContractAddress',
+                    baseDropRate: 0.02, // 2% chance
+                    levelScalingFactor: 0.2,
+                }
+            });
+            const goldReward = yield exports.prisma.rewardTier.create({
+                data: {
+                    name: 'gold',
+                    tokenAmount: 300,
+                    tokenContract: 'GoldTokenContractAddress',
+                    baseDropRate: 0.01, // 1% chance
+                    levelScalingFactor: 0.3,
+                }
+            });
+            const diamondReward = yield exports.prisma.rewardTier.create({
+                data: {
+                    name: 'diamond',
+                    tokenAmount: 500,
+                    tokenContract: 'DiamondTokenContractAddress',
+                    baseDropRate: 0.005, // 0.5% chance
+                    levelScalingFactor: 0.4,
+                }
+            });
+            return { baseReward, silverReward, goldReward, diamondReward };
+        }
+        catch (error) {
+            console.error('Error creating reward tiers:', error);
+            throw new Error('Could not create reward tiers');
+        }
+    });
+}
 app.get("/", (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        res.status(200).send("get request here");
+        const { baseReward, silverReward, goldReward, diamondReward } = yield createRewardTiers();
+        // Now, create the dungeon using the reward tier IDs
+        const dungeon = yield exports.prisma.dungeon.create({
+            data: {
+                name: "Dark Cave 6",
+                description: "A mysterious cave filled with unknown dangers.",
+                entryPoints: 100, // Tokens required to enter
+                timeToComplete: 3600, // Time to complete (in seconds)
+                minimumLevel: 0, // Minimum level required to enter
+                baseRewardId: baseReward.id, // Use the created base reward ID
+                silverRewardId: silverReward.id, // Use the created silver reward ID
+                goldRewardId: goldReward.id, // Use the created gold reward ID
+                diamondRewardId: diamondReward.id, // Use the created diamond reward ID
+                isActive: true,
+            }
+        });
+        console.log('Dungeon created:', dungeon);
+        res.status(200).json(dungeon);
     }
     catch (error) {
         next(error);
     }
 }));
 // This should be after all routes
-app.use(middleware_1.defaultErrorMiddleware);
+app.use(error_middleware_1.defaultErrorMiddleware);
 process.on('SIGINT', () => __awaiter(void 0, void 0, void 0, function* () {
     yield exports.prisma.$disconnect();
     process.exit();

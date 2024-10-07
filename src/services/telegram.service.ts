@@ -57,8 +57,8 @@ export function getPricingKeyboard() {
     return {
         reply_markup: {
             inline_keyboard: [
-                [{ text: '$50', callback_data: 'price_50' }],
-                [{ text: '$100', callback_data: 'price_100' }],
+                [{ text: '1 SOL (3 days)', callback_data: 'price_1' }],
+                [{ text: '2 SOL (6 days)', callback_data: 'price_2' }],
             ],
         },
     };
