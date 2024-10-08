@@ -48,8 +48,7 @@ export const ImageService = {
             if (!pending) {
                 await sendMessageUser(chatId, "No pending submission found. Please create a submission first.");
                 return;
-            }
-
+            }console.log({imageUrl})
             const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
 
             if (!ImageService.isValidImage(text, confidence)) {

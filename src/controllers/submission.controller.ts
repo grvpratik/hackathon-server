@@ -44,6 +44,10 @@ export async function handleVerifySubmission(req: Request, res: Response, next: 
         if (message!.photo && message!.chat.id) {
             ImageService.handleImage(message!.chat.id, message!.photo)
         }
+        res.status(200).json({
+            success: true,
+            message:"ok"
+        })
 
     } catch (error) {
         console.error('Error processing Telegram update:', error);
