@@ -19,7 +19,7 @@ export const ProofService = {
                 telegram_id: telegramId,
             },
         });
-    },async  createProof(chatId:number,userId:string,taskId:string,amount:number) {
+    }, async createProof(chatId: number, userId: string, taskId: string, amount: number) {
         return await prisma.proof.create({
             data: {
                 telegram_id: chatId,

@@ -42,5 +42,11 @@ export const UserService = {
             where: { id: userId },
             data: { points: { increment: points } },
         });
+    },
+    async updataUserAddress(userId:string,publicKey:string) {
+        return await prisma.user.update({
+            where: { id: userId },
+            data: { address: publicKey },
+        });
     }
 }

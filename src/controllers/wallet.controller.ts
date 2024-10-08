@@ -4,6 +4,8 @@ import { PublicKey } from "@solana/web3.js";
 import { PayerService } from '../services/payer.service';
 import { UserService } from '../services/user.service';
 import { verifyTransaction } from '../utils/solana';
+import { jwtVerify } from 'jose';
+import { verifySessionToken } from '../utils/jwt';
 const SIGNIN_MESSAGE = "WELCOME TO SOCIAL HUNT"
 export const WalletController = {
     async addWalletPayer(req: Request, res: Response, next: NextFunction) {
@@ -37,6 +39,20 @@ export const WalletController = {
             next(error)
         }
     }, async addWalletUser(req: Request, res: Response, next: NextFunction) {
+        const authHeader = req.headers["authorization"] ?? "";
+        // console.log({authHeader})
+        // Early return if authorization header is missing
+        if (!authHeader) {
+            return res.status(403).json({ message: "You are not logged in" });
+        }
+        const payload = await verifySessionToken(authHeader)
+        if (!payload) {
+            res.status(403).json({
+                success: false,
+                message:"verification failed"
+            })
+            return
+        }
         try {
             // @ts-ignore
           
@@ -56,8 +72,8 @@ export const WalletController = {
                 return res.status(411).json({ message: "Incorrect signature" });
             }
 
-            // const updated = await PayerService.updatePayerWallet(payerId, publicKey);
-            // console.log({ updated });
+            const updated = await UserService.updataUserAddress(payload.id as any, publicKey);
+            console.log({ updated });
 
             return res.status(200).json({ message: "Wallet added successfully" });
         } catch (error) {

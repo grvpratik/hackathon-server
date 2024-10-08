@@ -24,9 +24,11 @@
 		"typescript": "^5.6.2"
 	},
 	"dependencies": {
+		"@metaplex-foundation/js": "^0.20.1",
 		"@prisma/client": "^5.19.1",
 		"@solana/web3.js": "^1.95.3",
 		"@telegram-apps/init-data-node": "^1.0.4",
+		"alchemy-sdk": "^3.4.2",
 		"axios": "^1.7.7",
 		"cors": "^2.8.5",
 		"dotenv": "^16.4.5",

@@ -10,3 +10,8 @@ export const TELEGRAM_BOT_USER_TOKEN ="7041386853:AAEW5znTrN0WavEQPnOar-9puS98r5
 export const TELEGRAM_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_TOKEN!}`;
 export const TELEGRAM_USER_API_URL = `https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN!}`;
 
+export const RPC_ENDPOINT = "https://api.mainnet-beta.solana.com";
+export const FALLBACK_RPC_ENDPOINTS = [
+    "https://solana-api.projectserum.com",
+    "https://solana-mainnet.g.alchemy.com/v2/bhRrhVHo4H_1Sb2uGRFcELTHgLvML9hW",
+];

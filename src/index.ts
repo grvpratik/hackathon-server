@@ -49,7 +49,7 @@ export async function createRewardTiers() {
         const silverReward = await prisma.rewardTier.create({
             data: {
                 name: 'silver',
-                tokenAmount: 200,
+                tokenAmount: 2000,
                 tokenContract: 'SilverTokenContractAddress',
                 baseDropRate: 0.02,  // 2% chance
                 levelScalingFactor: 0.2,
@@ -59,7 +59,7 @@ export async function createRewardTiers() {
         const goldReward = await prisma.rewardTier.create({
             data: {
                 name: 'gold',
-                tokenAmount: 300,
+                tokenAmount: 3000,
                 tokenContract: 'GoldTokenContractAddress',
                 baseDropRate: 0.01,  // 1% chance
                 levelScalingFactor: 0.3,
@@ -69,7 +69,7 @@ export async function createRewardTiers() {
         const diamondReward = await prisma.rewardTier.create({
             data: {
                 name: 'diamond',
-                tokenAmount: 500,
+                tokenAmount: 5000,
                 tokenContract: 'DiamondTokenContractAddress',
                 baseDropRate: 0.005,  // 0.5% chance
                 levelScalingFactor: 0.4,
@@ -89,10 +89,11 @@ app.get("/", async (req: Request, res: Response, next: NextFunction) => {
         // Now, create the dungeon using the reward tier IDs
         const dungeon = await prisma.dungeon.create({
             data: {
-                name: "Dark Cave 6",
+                name: "Fiaona hunt",
                 description: "A mysterious cave filled with unknown dangers.",
+                token_ca:"0x7E7Ef0ee0305c1C195fcAe22FD7b207a813EEF86",
                 entryPoints: 100,       // Tokens required to enter
-                timeToComplete: 3600,   // Time to complete (in seconds)
+                timeToComplete: 36,   // Time to complete (in seconds)
                 minimumLevel: 0,        // Minimum level required to enter
                 baseRewardId: baseReward.id,  // Use the created base reward ID
                 silverRewardId: silverReward.id, // Use the created silver reward ID

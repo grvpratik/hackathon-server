@@ -11,7 +11,7 @@ walletRoute.post('/payer/payment', authMiddleware,WalletController.verifyPayment
 //connect
 //1 payer
 //2 user
-walletRoute.post('/user/connect', userMiddleware)
+walletRoute.post('/user/connect', WalletController.addWalletUser)
 walletRoute.post('/user/payment', userMiddleware)
 //payment
 //1 payer

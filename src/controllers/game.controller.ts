@@ -5,6 +5,10 @@ import { createRaid, gameAccInfo, getdungeonById, getdungeonList, getRaidById } 
 import { prisma } from "..";
 import { RewardName } from "@prisma/client";
 import { addExpToLvl, resetUnitForLegendary } from "../utils/game";
+import axios from "axios";
+import { Connection, PublicKey } from "@solana/web3.js";
+import { MetadataV1GpaBuilder, Metaplex } from "@metaplex-foundation/js";
+import { FALLBACK_RPC_ENDPOINTS, RPC_ENDPOINT } from "../config/constant";
 // Shared types between frontend and backend
 export interface User {
     id: string;
@@ -12,6 +16,12 @@ export interface User {
     first_name?: string;
     last_name?: string;
     gameAccount?: GameAccount;
+}
+interface TokenMetadata {
+    tokenName?: string;
+    tokenSymbol?: string;
+    tokenLogo?: string;
+    price: number;
 }
 
 export interface GameAccount {
@@ -61,243 +71,6 @@ export interface ApiResponse<T> {
     data?: T;
     error?: string;
 }
-
-// export async function gameAccountInfo(req: Request, res: Response, next: NextFunction) {
-//     // const client = getInitData(res);
-
-//     // // Ensure client data is valid
-//     // if (!client?.user?.id) {
-//     //     return res.status(400).json({ error: "Invalid client data" });
-//     // }
-//     // const tg = client?.user?.id
-//     // const user = await UserService.findUserByTelegramId(tg)
-//     // // Ensure client data is valid
-//     // if (!user) {
-//     //     return res.status(400).json({ error: "user not found" });
-//     // }
-//     // const account = await gameAccInfo(user.id)
-//     return res.status(200).json({
-//         success: true,
-//         data: {
-//             id: "user123",
-//             username: "DungeonMaster",
-//             level: 5,
-//             experience: 60,
-//             energy: 80,
-//             tokens: 100,
-//             lastEnergyRefill: "2024-03-06T12:00:00Z"
-//         }
-//     });
-// }
-
-// export async function gameDungeonList(req: Request, res: Response, next: NextFunction) {
-
-//     const dungeon = await getdungeonList();
-//     return res.status(200).json({
-//         success: true,
-//         data: [
-//             {
-//                 id: "dungeon1",
-//                 name: "Forest Cave",
-//                 minimumLevel: 1,
-//                 timeToComplete: 300,
-//                 entryTokens: 10,
-//                 energyCost: 20,
-//                 goldReward: { tokenAmount: 30, experience: 100 },
-//                 silverReward: { tokenAmount: 20, experience: 70 },
-//                 baseReward: { tokenAmount: 10, experience: 50 }
-//             },
-//             {
-//                 id: "dungeon2",
-//                 name: "Dark Tower",
-//                 minimumLevel: 3,
-//                 timeToComplete: 600,
-//                 entryTokens: 20,
-//                 energyCost: 30,
-//                 goldReward: { tokenAmount: 50, experience: 150 },
-//                 silverReward: { tokenAmount: 35, experience: 100 },
-//                 baseReward: { tokenAmount: 20, experience: 70 }
-//             }
-//         ]
-//     });
-// }
-
-
-// export async function activeDungeonRaid(req: Request, res: Response, next: NextFunction) {
-//     const userId = ""
-//     //find dungeonraid where userid and active /completed/clain
-//     res.json({
-//         success: true,
-//             data: [
-//                 {
-//                     id: "raid1",
-//                     dungeon: {
-//                         id: "dungeon1",
-//                         name: "Forest Cave",
-//                         timeToComplete: 300,
-//                         entryTokens: 10,
-//                         energyCost: 20
-//                     },
-//                     endTime: "2024-03-06T12:30:00Z"
-//                 }
-//             ]
-//     })
-// }
-
-
-
-// export async function startDungeonRaid(req: Request, res: Response, next: NextFunction) {
-//     const userId = ""
-//     const gameacc = await gameAccInfo(userId)
-//     const gameId = gameacc!.id
-//     const dungeonId = "" //params or query
-//     const dungeon = await getdungeonById(dungeonId)
-//     //check level
-
-
-
-//     const endTime = new Date(Date.now() + dungeon!.timeToComplete * 1000)
-
-//     const raid = createRaid(userId, gameId, dungeon!.entryTokens, dungeonId, endTime)
-
-//     res.json({
-//         success: true,
-//             data: {
-//             id: "newraid123",
-//                 dungeon: {
-//                 id: "dungeon1",
-//                     name: "Forest Cave",
-//                         timeToComplete: 300,
-//                             entryTokens: 10,
-//                                 energyCost: 20
-//             },
-//             endTime: "2024-03-06T12:35:00Z"
-//         }
-//     })
-// }
-
-// export async function claimDungeonReward(req: Request, res: Response, next: NextFunction) {
-
-
-//     // const raidId = ""
-//     // const dungeonId = ""
-//     // const gameId = ""
-
-
-//     // const raid = await getRaidById(raidId);
-//     // if (!raid || !raid.completed || raid.claimed) {
-//     //     res.status(300).json({
-//     //         success: false,
-//     //         message:"Invalid raid or already claimed"
-//     //     })
-//     // }
-//     // if (raid?.endTime) {
-
-//     // }
-
-//     // function resultWinner(params) {
-
-//     // }
-
-//     // if (top winner here) {
-//     //     //assign exp and decrease lvl
-
-//     // }
-//     // if (top winner here) {
-//     //     //assign exp and decrease lvl
-
-//     // } if (base winner here) {
-//     //     //assign exp and decrease lvl
-//     //     //gain exp or lvl here
-
-//     // }
-
-//     // if (if token claimed here) {
-//     //     //maybe send to his wallet 
-//     // }
-
-//     //logic check
-//     //->check ended or not
-//     //-> if time ended and status is active make result
-//     //->assign exp and lvl based on reward type
-//     //->assign status complete and genearate payout and assign claimed
-//     //->
-
-
-
-
-
-
-
-
-
-
-//     //         // Determine reward tier
-//     //         const rewardTier = await this.determineRewardTier(raid.user.level, raid.dungeon)
-
-//     //         // Calculate experience gain
-//     //         const experience = raid.dungeon.baseExperience
-
-//     //         await prisma.$transaction(async (prisma) => {
-//     //             // Update user experience and possibly level
-//     //             const updatedUser = await this.addExperience(raid.userId, experience)
-
-//     //             // If user got top reward, reduce their level by half
-//     //             if (rewardTier === 'gold') {
-//     //                 await prisma.gameUser.update({
-//     //                     where: { id: raid.userId },
-//     //                     data: { level: Math.ceil(updatedUser.level / 2) }
-//     //                 })
-//     //             }
-
-//     //             // Mark raid as claimed and record rewards
-//     //             await prisma.dungeonRaid.update({
-//     //                 where: { id: raidId },
-//     //                 data: {
-//     //                     claimed: true,
-//     //                     rewardTier,
-//     //                     experience,
-//     //                     tokenAmount: this.getTokenAmount(raid.dungeon, rewardTier)
-//     //                 }
-//     //             })
-
-//     //             // Update achievements
-//     //             await this.updateAchievements(raid.userId)
-//     //         })
-//     res.json({
-//         success: true,
-//         data: {
-//             rewardTier: 'gold',
-//             tokenAmount: 30,
-//             experience: 100
-//         }
-//     })
-
-
-// }
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
-
 
 
 
@@ -383,12 +156,86 @@ class RewardSystem {
             (Math.random() * this.BASE_LUCK_FACTOR);
     }
 }
+export async function tokenMetaData(req: Request, res: Response) {
+    const address = req.params.tokenId;
+    console.log({address})
+    if (!address) {
+        res.status(400).json({
+            success: false,
+            messsage: "token ca not found"
+        })
+        return
+    }
+    async function tryConnection(endpoint: string): Promise<Connection> {
+        const connection = new Connection(endpoint);
+        try {
+            await connection.getSlot();
+            return connection;
+        } catch (error) {
+            throw new Error(`Failed to connect to ${endpoint}`);
+        }
+    }
 
+    async function getWorkingConnection(): Promise<Connection> {
+        try {
+            return await tryConnection(RPC_ENDPOINT);
+        } catch (error) {
+            for (const fallbackEndpoint of FALLBACK_RPC_ENDPOINTS) {
+                try {
+                    return await tryConnection(fallbackEndpoint);
+                } catch { } // Intentionally empty, we'll try the next endpoint
+            }
+            throw new Error("All RPC endpoints failed");
+        }
+    }
+    try {
+        const connection = await getWorkingConnection();
+        const metaplex = Metaplex.make(connection);
+        const mintAddress = new PublicKey(address);
+
+        let tokenMetadata: Partial<TokenMetadata> = {};
+
+        try {
+            const metadataAccount = metaplex.nfts().pdas().metadata({ mint: mintAddress });
+            const metadataAccountInfo = await connection.getAccountInfo(metadataAccount);
+
+            if (metadataAccountInfo) {
+                const token = await metaplex.nfts().findByMint({ mintAddress });
+                tokenMetadata = {
+                    tokenName: token.name,
+                    tokenSymbol: token.symbol,
+                    tokenLogo: token.json?.image,
+                };
+            }
+        } catch (error) {
+            console.warn("Failed to fetch on-chain metadata:", error);
+            // Continue execution to at least get the price
+        }
+
+        // Fetch price data
+        const response = await axios.get(
+            `https://price.jup.ag/v6/price?ids=${address}&vsToken=So11111111111111111111111111111111111111112`
+        );
+        const jupiterData = response.data.data;
+        const price = jupiterData[address]?.price ?? 0;
+
+        res.status(200).json({
+            ...tokenMetadata,
+            price,
+        });
+    } catch (error) {
+        console.error("Failed to fetch token metadata:", error);
+        res.status(500).json({
+            success: false,
+            message: "error getting token metadata"
+        })
+    }
+}
 export async function gameAccountInfo(req: Request, res: Response) {
     try {
         const client = getInitData(res);
         console.log(client)
-      
+
         if (!client?.user?.id) {
             return res.status(400).json({ error: "Invalid client data" });
         }
@@ -401,13 +248,13 @@ export async function gameAccountInfo(req: Request, res: Response) {
         console.log(user)
         if (user) {
             return res.json({
-            success: true,
-            data: user.gameAccount
-        });
+                success: true,
+                data: user.gameAccount
+            });
         } else {
             return res.json({
                 success: false,
-                message:"user not found "
+                message: "user not found "
             });
         }
 
@@ -432,7 +279,7 @@ export async function gameAccountInfo(req: Request, res: Response) {
         //     });
         // }
 
-        
+
     } catch (error) {
         console.error(error);
         return res.status(500).json({ success: false, error: "Internal server error" });
@@ -442,7 +289,13 @@ export async function gameAccountInfo(req: Request, res: Response) {
 export async function gameDungeonList(req: Request, res: Response) {
     try {
         const dungeons = await prisma.dungeon.findMany({
-            where: { isActive: true }
+            where: { isActive: true },
+            include: {
+                baseReward: true,
+                silverReward: true,
+                goldReward: true,
+                diamondReward: true
+            }
         });
 
         return res.json({
@@ -458,7 +311,7 @@ export async function gameDungeonList(req: Request, res: Response) {
 export async function getActiveRaids(req: Request, res: Response) {
     try {
         const client = getInitData(res);
-       
+
         // Ensure client data is valid
         if (!client?.user?.id) {
             return res.status(400).json({ error: "Invalid client data" });
@@ -497,7 +350,7 @@ export async function startDungeonRaid(req: Request, res: Response) {
 
     const dungeonId = req.params.dungeonId;
     try {
-       
+
         const client = getInitData(res);
 
         // Ensure client data is valid
@@ -509,14 +362,14 @@ export async function startDungeonRaid(req: Request, res: Response) {
             where: { telegram_id: BigInt(client.user.id) },
             include: { gameAccount: true }
         });
-console.log({user})
+        console.log({ user })
         if (!user!.gameAccount) {
             return res.status(400).json({ success: false, error: "Game account not found" });
         }
         const exRaid = await prisma.dungeonRaid.findFirst({
             where: {
                 dungeonId: dungeonId,
-                gameId:user?.gameAccount.id
+                gameId: user?.gameAccount.id
             }
         })
         if (exRaid) {
@@ -525,19 +378,19 @@ console.log({user})
         const dungeon = await prisma.dungeon.findUnique({
             where: { id: dungeonId }
         });
-console.log({dungeon})
+        console.log({ dungeon })
         if (!dungeon) {
             return res.status(400).json({ success: false, error: "Dungeon not found" });
         }
 
-        // // Check if user meets requirements
-        // if (user!.gameAccount.knight_lvl! < dungeon.minimumLevel) {
-        //     return res.status(400).json({ success: false, error: "Level requirement not met" });
-        // }
+        // Check if user meets requirements
+        if (user!.gameAccount.knight_lvl! < dungeon.minimumLevel) {
+            return res.status(400).json({ success: false, error: "Level requirement not met" });
+        }
 
-        // if (user!.points < dungeon.entryPoints) {
-        //     return res.status(400).json({ success: false, error: "Not enough tokens" });
-        // }
+        if (user!.points < dungeon.entryPoints) {
+            return res.status(400).json({ success: false, error: "Not enough tokens" });
+        }
 
         // Start raid
         const raid = await prisma.dungeonRaid.create({
@@ -573,7 +426,7 @@ console.log({dungeon})
 
 export async function claimDungeonReward(req: Request, res: Response) {
     try {
-        const { raidId } = req.body;
+        const raidId = req.params.raidId;
         const client = getInitData(res);
 
         // Ensure client data is valid
