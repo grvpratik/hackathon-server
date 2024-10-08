@@ -78,7 +78,81 @@ export interface ApiResponse<T> {
 
 
 
+export async function tokenMetaData(req: Request, res: Response) {
+    const address = req.params.tokenId;
+    console.log({ address })
+    if (!address) {
+        res.status(400).json({
+            success: false,
+            messsage: "token ca not found"
+        })
+        return
+    }
+    async function tryConnection(endpoint: string): Promise<Connection> {
+        const connection = new Connection(endpoint);
+        try {
+            await connection.getSlot();
+            return connection;
+        } catch (error) {
+            throw new Error(`Failed to connect to ${endpoint}`);
+        }
+    }
 
+    async function getWorkingConnection(): Promise<Connection> {
+        try {
+            return await tryConnection(RPC_ENDPOINT);
+        } catch (error) {
+            for (const fallbackEndpoint of FALLBACK_RPC_ENDPOINTS) {
+                try {
+                    return await tryConnection(fallbackEndpoint);
+                } catch { } // Intentionally empty, we'll try the next endpoint
+            }
+            throw new Error("All RPC endpoints failed");
+        }
+    }
+    try {
+        const connection = await getWorkingConnection();
+        const metaplex = Metaplex.make(connection);
+        const mintAddress = new PublicKey(address);
+
+        let tokenMetadata: Partial<TokenMetadata> = {};
+
+        try {
+            const metadataAccount = metaplex.nfts().pdas().metadata({ mint: mintAddress });
+            const metadataAccountInfo = await connection.getAccountInfo(metadataAccount);
+
+            if (metadataAccountInfo) {
+                const token = await metaplex.nfts().findByMint({ mintAddress });
+                tokenMetadata = {
+                    tokenName: token.name,
+                    tokenSymbol: token.symbol,
+                    tokenLogo: token.json?.image,
+                };
+            }
+        } catch (error) {
+            console.warn("Failed to fetch on-chain metadata:", error);
+            // Continue execution to at least get the price
+        }
+
+        // Fetch price data
+        const response = await axios.get(
+            `https://price.jup.ag/v6/price?ids=${address}&vsToken=So11111111111111111111111111111111111111112`
+        );
+        const jupiterData = response.data.data;
+        const price = jupiterData[address]?.price ?? 0;
+
+        res.status(200).json({
+            ...tokenMetadata,
+            price,
+        });
+    } catch (error) {
+        console.error("Failed to fetch token metadata:", error);
+        res.status(500).json({
+            success: false,
+            message: "error getting token metadata"
+        })
+    }
+}
 
 class RewardSystem {
     private static BASE_LUCK_FACTOR = 0.5; // 50% luck
@@ -156,81 +230,7 @@ class RewardSystem {
             (Math.random() * this.BASE_LUCK_FACTOR);
     }
 }
-export async function tokenMetaData(req: Request, res: Response) {
-    const address = req.params.tokenId;
-    console.log({address})
-    if (!address) {
-        res.status(400).json({
-            success: false,
-            messsage: "token ca not found"
-        })
-        return
-    }
-    async function tryConnection(endpoint: string): Promise<Connection> {
-        const connection = new Connection(endpoint);
-        try {
-            await connection.getSlot();
-            return connection;
-        } catch (error) {
-            throw new Error(`Failed to connect to ${endpoint}`);
-        }
-    }
 
-    async function getWorkingConnection(): Promise<Connection> {
-        try {
-            return await tryConnection(RPC_ENDPOINT);
-        } catch (error) {
-            for (const fallbackEndpoint of FALLBACK_RPC_ENDPOINTS) {
-                try {
-                    return await tryConnection(fallbackEndpoint);
-                } catch { } // Intentionally empty, we'll try the next endpoint
-            }
-            throw new Error("All RPC endpoints failed");
-        }
-    }
-    try {
-        const connection = await getWorkingConnection();
-        const metaplex = Metaplex.make(connection);
-        const mintAddress = new PublicKey(address);
-
-        let tokenMetadata: Partial<TokenMetadata> = {};
-
-        try {
-            const metadataAccount = metaplex.nfts().pdas().metadata({ mint: mintAddress });
-            const metadataAccountInfo = await connection.getAccountInfo(metadataAccount);
-
-            if (metadataAccountInfo) {
-                const token = await metaplex.nfts().findByMint({ mintAddress });
-                tokenMetadata = {
-                    tokenName: token.name,
-                    tokenSymbol: token.symbol,
-                    tokenLogo: token.json?.image,
-                };
-            }
-        } catch (error) {
-            console.warn("Failed to fetch on-chain metadata:", error);
-            // Continue execution to at least get the price
-        }
-
-        // Fetch price data
-        const response = await axios.get(
-            `https://price.jup.ag/v6/price?ids=${address}&vsToken=So11111111111111111111111111111111111111112`
-        );
-        const jupiterData = response.data.data;
-        const price = jupiterData[address]?.price ?? 0;
-
-        res.status(200).json({
-            ...tokenMetadata,
-            price,
-        });
-    } catch (error) {
-        console.error("Failed to fetch token metadata:", error);
-        res.status(500).json({
-            success: false,
-            message: "error getting token metadata"
-        })
-    }
-}
 export async function gameAccountInfo(req: Request, res: Response) {
     try {
         const client = getInitData(res);
@@ -453,6 +453,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
         console.log({ avgLevel })
         // Fetch dungeon reward tiers
         const dungeon = raid.dungeon;
+        const ca = dungeon.token_ca
 
         const baseReward = await prisma.rewardTier.findUnique({
             where: { id: dungeon.baseRewardId },
@@ -466,7 +467,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
         const diamondReward = await prisma.rewardTier.findUnique({
             where: { id: dungeon.diamondRewardId },
         });
-        if (!baseReward || !silverReward || !goldReward) {
+        if (!baseReward || !silverReward || !goldReward || !diamondReward) {
             return res.status(500).json({ error: "Rewards configuration error" });
         }
 
@@ -476,11 +477,12 @@ export async function claimDungeonReward(req: Request, res: Response) {
         let updatedGameData: any = {};
 
         if (rewardResult.rewardTier === RewardName.base) {
+            const token = rewardResult.tokenAmount
             const BASE_EXP = 50
             const beastExp = addExpToLvl(gameAccount.beast_lvl!, gameAccount.beast_exp!, BASE_EXP)
             const knightExp = addExpToLvl(gameAccount.knight_lvl!, gameAccount.knight_exp!, BASE_EXP)
             const mageExp = addExpToLvl(gameAccount.mage_lvl!, gameAccount.mage_exp!, BASE_EXP)
-            const result = await prisma.$transaction([
+            updatedGameData = await prisma.$transaction([
                 prisma.dungeonRaid.update({
                     where: { id: raidId },
                     data: {
@@ -501,10 +503,11 @@ export async function claimDungeonReward(req: Request, res: Response) {
                     }
                 })
             ]);
+
         }
         if (rewardResult.rewardTier === RewardName.silver) {
 
-            const result = await prisma.$transaction([
+            updatedGameData = await prisma.$transaction([
                 prisma.dungeonRaid.update({
                     where: { id: raidId },
                     data: {
@@ -516,7 +519,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
                     where: { id: raid.gameId },
                     data: {
                         knight_lvl: resetUnitForLegendary(gameAccount.knight_lvl!),
-                        knight_exp: 0,// Assuming knight_exp is the main experience field
+                        knight_exp: 0,
                         beast_lvl: resetUnitForLegendary(gameAccount.beast_lvl!),
                         beast_exp: 0,
                         mage_lvl: resetUnitForLegendary(gameAccount.mage_lvl!),
@@ -527,7 +530,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
         }
         if (rewardResult.rewardTier === RewardName.gold) {
 
-            const result = await prisma.$transaction([
+            updatedGameData = await prisma.$transaction([
                 prisma.dungeonRaid.update({
                     where: { id: raidId },
                     data: {
@@ -550,7 +553,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
         }
         if (rewardResult.rewardTier === RewardName.diamond) {
 
-            const result = await prisma.$transaction([
+            updatedGameData = await prisma.$transaction([
                 prisma.dungeonRaid.update({
                     where: { id: raidId },
                     data: {
@@ -572,7 +575,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
             ]);
         }
 
-
+        res.status(200).json({ rewardResult })
 
     } catch (error) {
         console.error(error);
