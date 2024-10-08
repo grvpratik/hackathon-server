@@ -2,7 +2,7 @@ import { config, PhotoSize } from "../types";
 import { createImageBufferFromUrl, generateImageHash, isValidProof, processImage } from "../utils/chatbot";
 import { ProofService } from "./proof.service";
 import { SubmissionService } from "./submission.service";
-import { getImageUrl, sendMessage, sendMessageUser } from "./telegram.service";
+import { getImageUrl, sendMessage, sendMessageUser, sendReplyUser } from "./telegram.service";
 import { UserService } from "./user.service";
 
 export const ImageService = {
@@ -21,7 +21,6 @@ export const ImageService = {
     isValidImage(text: string, confidence: number): boolean {
         return !!text && confidence >= config.MIN_CONFIDENCE;
     },
-
     async handleImage(chatId: number, photos: PhotoSize[]): Promise<void> {
         console.log("IMAGE HANDLER FUNCTION");
 
@@ -31,8 +30,6 @@ export const ImageService = {
             return;
         }
 
-
-
         try {
             const fileId = photos[photos.length - 1].file_id;
             const imageUrl = await getImageUrl(fileId);
@@ -40,11 +37,14 @@ export const ImageService = {
             if (!imageUrl) {
                 throw new Error("Failed to get image URL");
             }
-            await sendMessageUser(chatId, "Processing your image, please wait... 🔄");
+
+            // Notify the user that the image is being processed.
+            await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
+
             const user = await UserService.findUserByTelegramId(chatId);
 
             if (!user) {
-                await sendMessageUser(chatId, "User not found. Please open the app first to create your account.");
+                await sendReplyUser(chatId, "User not found. Please open the app first to create your account.");
                 return;
             }
 
@@ -53,20 +53,26 @@ export const ImageService = {
             if (!pending) {
                 await sendMessageUser(chatId, "No pending submission found. Please create a submission first.");
                 return;
-            } console.log({ imageUrl })
+            }
+
+            console.log({ imageUrl });
             const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
+
             if (!text || !confidence) {
                 await sendMessageUser(chatId, `Error while processing image extraction`);
                 return;
             }
+
             if (!ImageService.isValidImage(text, confidence)) {
                 await sendMessageUser(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%). Please try uploading a clearer image.`);
                 return;
             }
+
             if (!isValidProof(text)) {
                 await sendMessageUser(chatId, `Not a valid proof (confidence: ${confidence.toFixed(2)}%). Please ensure the image contains relevant social media content.`);
                 return;
             }
+
             if (await SubmissionService.isDuplicateSubmission(user.id, imageHash)) {
                 await sendMessageUser(chatId, "Duplicate proof detected. Please submit a new, unique image.");
                 return;
@@ -81,5 +87,6 @@ export const ImageService = {
             await sendMessageUser(chatId, "An unexpected error occurred while processing your image. Please try again later.");
         }
     }
+
 }
 

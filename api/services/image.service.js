@@ -47,10 +47,11 @@ exports.ImageService = {
                 if (!imageUrl) {
                     throw new Error("Failed to get image URL");
                 }
-                yield (0, telegram_service_1.sendMessageUser)(chatId, "Processing your image, please wait... 🔄");
+                // Notify the user that the image is being processed.
+                yield (0, telegram_service_1.sendReplyUser)(chatId, "Processing your image, please wait... 🔄");
                 const user = yield user_service_1.UserService.findUserByTelegramId(chatId);
                 if (!user) {
-                    yield (0, telegram_service_1.sendMessageUser)(chatId, "User not found. Please open the app first to create your account.");
+                    yield (0, telegram_service_1.sendReplyUser)(chatId, "User not found. Please open the app first to create your account.");
                     return;
                 }
                 const pending = yield proof_service_1.ProofService.findPendingProof(user.id, chatId);

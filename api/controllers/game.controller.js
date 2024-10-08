@@ -396,6 +396,7 @@ function claimDungeonReward(req, res) {
             // 3. Process reward based on tier
             let updatedGameData = {};
             if (rewardResult.rewardTier === client_1.RewardName.base) {
+                //for mainnet reward
                 const token = rewardResult.tokenAmount;
                 const BASE_EXP = 50;
                 const beastExp = (0, game_1.addExpToLvl)(gameAccount.beast_lvl, gameAccount.beast_exp, BASE_EXP);

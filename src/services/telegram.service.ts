@@ -97,32 +97,21 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
     }
 }
 export async function sendMessageUser(chatId: number, text: string, options = {}) {
-    try {
-        if (!TELEGRAM_USER_API_URL) {
-            throw new Error('TELEGRAM_USER_API_URL is not defined');
-        }
 
-        const response = await fetch(`${TELEGRAM_USER_API_URL}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify({
-                chat_id: chatId,
-                text,
-                ...options,
-            }),
-        });
 
-        if (!response.ok) {
-            throw new Error(`Error: ${response.statusText}`);
-        }
+    await fetch(`${TELEGRAM_USER_API_URL}/sendMessage`, {
+        method: 'POST',
+        headers: {
+            'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+            chat_id: chatId,
+            text,
+            ...options,
+        }),
+    });
 
-        const data = await response.json();
-        return data;
-    } catch (error) {
-        console.error("SEND MESSAGE ERROR", error);
-    }
+
 }
 
 export async function editMessageReplyMarkup(chatId: number, messageId: number) {
@@ -167,7 +156,7 @@ export async function getFileUrl(filePath: string) {
 
 const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN}`;
 
-export async function sendReplyUser(chatId: string, responseText: string) {
+export async function sendReplyUser(chatId: number, responseText: string) {
     return await axios.post(`${TELEGRAM_API}/sendMessage`, {
         chat_id: chatId,
         text: responseText

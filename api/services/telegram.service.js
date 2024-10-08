@@ -42,6 +42,7 @@ exports.editMessageReplyMarkup = editMessageReplyMarkup;
 exports.getImageUrl = getImageUrl;
 exports.getFilePath = getFilePath;
 exports.getFileUrl = getFileUrl;
+exports.sendReplyUser = sendReplyUser;
 const axios_1 = __importStar(require("axios"));
 const types_1 = require("../types");
 const constant_1 = require("../config/constant");
@@ -133,26 +134,13 @@ function sendMessage(chatId_1, text_1) {
 }
 function sendMessageUser(chatId_1, text_1) {
     return __awaiter(this, arguments, void 0, function* (chatId, text, options = {}) {
-        try {
-            if (!constant_1.TELEGRAM_USER_API_URL) {
-                throw new Error('TELEGRAM_USER_API_URL is not defined');
-            }
-            const response = yield fetch(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json',
-                },
-                body: JSON.stringify(Object.assign({ chat_id: chatId, text }, options)),
-            });
-            if (!response.ok) {
-                throw new Error(`Error: ${response.statusText}`);
-            }
-            const data = yield response.json();
-            return data;
-        }
-        catch (error) {
-            console.error("SEND MESSAGE ERROR", error);
-        }
+        yield fetch(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify(Object.assign({ chat_id: chatId, text }, options)),
+        });
     });
 }
 function editMessageReplyMarkup(chatId, messageId) {
@@ -201,5 +189,14 @@ function getFilePath(fileId) {
 function getFileUrl(filePath) {
     return __awaiter(this, void 0, void 0, function* () {
         return `https://api.telegram.org/file/bot${constant_1.TELEGRAM_BOT_USER_TOKEN}/${filePath}`;
+    });
+}
+const TELEGRAM_API = `https://api.telegram.org/bot${constant_1.TELEGRAM_BOT_USER_TOKEN}`;
+function sendReplyUser(chatId, responseText) {
+    return __awaiter(this, void 0, void 0, function* () {
+        return yield axios_1.default.post(`${TELEGRAM_API}/sendMessage`, {
+            chat_id: chatId,
+            text: responseText
+        });
     });
 }

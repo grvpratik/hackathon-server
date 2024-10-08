@@ -5,12 +5,13 @@ import dotenv from "dotenv";
 import { PrismaClient } from "@prisma/client";
 
 
-import telegramRoute from "./routes/telegram.route";
+
 import userRoute from "./routes/user.route";
 import taskRoute from "./routes/task.route";
 import { defaultErrorMiddleware } from "./middlewares/error.middleware";
 import gameRoute from "./routes/game.route";
 import walletRoute from "./routes/wallet.route";
+import telegramRoute from "./routes/telegram.route";
 
 dotenv.config();
 

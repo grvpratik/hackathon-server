@@ -1,13 +1,13 @@
 import { NextFunction, Request, Response } from "express";
 import { getInitData } from "../middlewares/user.middleware";
-import { UserService } from "../services/user.service";
-import { createRaid, gameAccInfo, getdungeonById, getdungeonList, getRaidById } from "../services/game.service";
+
+
 import { prisma } from "..";
 import { RewardName } from "@prisma/client";
 import { addExpToLvl, resetUnitForLegendary } from "../utils/game";
 import axios from "axios";
 import { Connection, PublicKey } from "@solana/web3.js";
-import { MetadataV1GpaBuilder, Metaplex } from "@metaplex-foundation/js";
+import { Metaplex } from "@metaplex-foundation/js";
 import { FALLBACK_RPC_ENDPOINTS, RPC_ENDPOINT } from "../config/constant";
 // Shared types between frontend and backend
 export interface User {
@@ -477,6 +477,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
         let updatedGameData: any = {};
 
         if (rewardResult.rewardTier === RewardName.base) {
+            //for mainnet reward
             const token = rewardResult.tokenAmount
             const BASE_EXP = 50
             const beastExp = addExpToLvl(gameAccount.beast_lvl!, gameAccount.beast_exp!, BASE_EXP)

@@ -18,7 +18,7 @@ telegramRoute.post('/verify', handleVerifySubmission)
 
 
 
-
+export default telegramRoute;
 
 
 // const TELEGRAM_BOT_USER_TOKEN = process.env.TELEGRAM_BOT_USER_TOKEN;
