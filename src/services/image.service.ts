@@ -5,19 +5,19 @@ import { SubmissionService } from "./submission.service";
 import { getImageUrl, sendMessage, sendMessageUser } from "./telegram.service";
 import { UserService } from "./user.service";
 
-export const ImageService= {
+export const ImageService = {
     async processImage(imageUrl: string) {
         const buffer = await createImageBufferFromUrl(imageUrl);
         const { text, confidence } = await processImage(buffer);
         const imageHash = await generateImageHash(buffer);
         return { text, confidence, imageHash };
     }
-,
-   isValidImage(text: string, confidence: number): boolean {
+    ,
+    isValidImage(text: string, confidence: number): boolean {
         return !!text && confidence >= config.MIN_CONFIDENCE;
     },
 
-    async handleImage (chatId: number, photos: PhotoSize[]): Promise<void> {
+    async handleImage(chatId: number, photos: PhotoSize[]): Promise<void> {
         console.log("IMAGE HANDLER FUNCTION");
 
         if (!chatId || !Array.isArray(photos) || photos.length === 0) {
@@ -26,7 +26,7 @@ export const ImageService= {
             return;
         }
 
-        await sendMessageUser(chatId, "Processing your image, please wait... 🔄");
+
 
         try {
             const fileId = photos[photos.length - 1].file_id;
@@ -35,7 +35,7 @@ export const ImageService= {
             if (!imageUrl) {
                 throw new Error("Failed to get image URL");
             }
-
+            await sendMessageUser(chatId, "Processing your image, please wait... 🔄");
             const user = await UserService.findUserByTelegramId(chatId);
 
             if (!user) {
