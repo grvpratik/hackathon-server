@@ -56,7 +56,7 @@ export const processImage = async (buffer: Buffer): Promise<{ text: string; conf
     const worker =await Tesseract.createWorker(config.TESSERACT_LANG);
     try {
         const grayscaleBuffer = await convertToGrayscale(buffer);
-        const { data } = await worker.recognize(grayscaleBuffer);
+        const { data } = await Tesseract.recognize(grayscaleBuffer);
         return { text: data.text, confidence: data.confidence };
     } finally {
         await worker.terminate();

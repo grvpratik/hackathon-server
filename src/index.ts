@@ -84,30 +84,30 @@ export async function createRewardTiers() {
 }
 app.get("/", async (req: Request, res: Response, next: NextFunction) => {
     try {
-        const { baseReward, silverReward, goldReward, diamondReward } = await createRewardTiers();
+        // const { baseReward, silverReward, goldReward, diamondReward } = await createRewardTiers();
 
-        // Now, create the dungeon using the reward tier IDs
-        const dungeon = await prisma.dungeon.create({
-            data: {
-                name: "Fiaona hunt",
-                description: "A mysterious cave filled with unknown dangers.",
-                token_ca:"0x7E7Ef0ee0305c1C195fcAe22FD7b207a813EEF86",
-                entryPoints: 100,       // Tokens required to enter
-                timeToComplete: 36,   // Time to complete (in seconds)
-                minimumLevel: 0,        // Minimum level required to enter
-                baseRewardId: baseReward.id,  // Use the created base reward ID
-                silverRewardId: silverReward.id, // Use the created silver reward ID
-                goldRewardId: goldReward.id, // Use the created gold reward ID
-                diamondRewardId: diamondReward.id, // Use the created diamond reward ID
-                isActive: true,
-            }
-        });
+        // // Now, create the dungeon using the reward tier IDs
+        // const dungeon = await prisma.dungeon.create({
+        //     data: {
+        //         name: "Fiaona hunt",
+        //         description: "A mysterious cave filled with unknown dangers.",
+        //         token_ca:"0x7E7Ef0ee0305c1C195fcAe22FD7b207a813EEF86",
+        //         entryPoints: 100,       // Tokens required to enter
+        //         timeToComplete: 36,   // Time to complete (in seconds)
+        //         minimumLevel: 0,        // Minimum level required to enter
+        //         baseRewardId: baseReward.id,  // Use the created base reward ID
+        //         silverRewardId: silverReward.id, // Use the created silver reward ID
+        //         goldRewardId: goldReward.id, // Use the created gold reward ID
+        //         diamondRewardId: diamondReward.id, // Use the created diamond reward ID
+        //         isActive: true,
+        //     }
+        // });
 
-        console.log('Dungeon created:', dungeon);
+        // console.log('Dungeon created:', dungeon);
         
 
 
-        res.status(200).json(dungeon);
+        res.status(200).json();
     } catch (error) {
         next(error);
     }

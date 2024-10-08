@@ -1,61 +1,139 @@
-
-
-
-import { ImageService } from "../services/image.service";
 import { NextFunction, Request, Response } from "express";
+import { ImageService } from "../services/image.service";
 import { UserService } from "../services/user.service";
 import { ProofService } from "../services/proof.service";
-import { sendMessage, sendMessageUser } from "../services/telegram.service";
+import { sendMessageUser } from "../services/telegram.service";
 import { getInitData } from "../middlewares/user.middleware";
 
-const POINTS = 200
+const POINTS = 200;
 
+// Enhanced TypeScript interfaces
+interface TelegramChat {
+    id: number;
+    username?: string;
+    type: string;
+}
 
-// Types
+interface TelegramPhoto {
+    file_id: string;
+    file_unique_id: string;
+    width: number;
+    height: number;
+    file_size?: number;
+}
+
 interface TelegramMessage {
-    chat: {
-        id: number;
-        username?: string;
-    };
+    message_id: number;
+    chat: TelegramChat;
+    date: number;
     text?: string;
-    photo?: any[];
+    photo?: TelegramPhoto[];
 }
 
 interface TelegramUpdate {
+    update_id: number;
     message?: TelegramMessage;
     callback_query?: any;
 }
 
 export async function handleVerifySubmission(req: Request, res: Response, next: NextFunction) {
     try {
-        const body = req.body;
-        console.log('Received Telegram update:', JSON.stringify(body, null, 2));
-
-        const { message }: TelegramUpdate = body;
-        if (message && message.chat && message.text) {
-            await handleUserMessage(message);
+        // Validate request body
+        if (!req.body || typeof req.body !== 'object') {
+            console.error('Invalid request body received:', req.body);
+            return res.status(400).json({
+                success: false,
+                message: "Invalid request body"
+            });
         }
 
-        // if (callback_query) {
-        //     await handleCallbackQuery(callback_query);
-        // }
+        const update: TelegramUpdate = req.body;
 
+        // Enhanced logging
+        console.log('Received Telegram update:', JSON.stringify(update, null, 2));
 
-        if (message!.photo && message!.chat.id) {
-            ImageService.handleImage(message!.chat.id, message!.photo)
+        // Verify update_id exists
+        if (!update.update_id) {
+            console.warn('Received update without update_id:', update);
+            return res.status(400).json({
+                success: false,
+                message: "Missing update_id"
+            });
         }
+
+        const { message } = update;
+
+        if (message) {
+            // Handle text messages
+            if (message.text) {
+                await handleUserMessage(message);
+            }
+
+            // Handle photo messages
+            if (message.photo && message.photo.length > 0 && message.chat.id) {
+                await ImageService.handleImage(message.chat.id, message.photo);
+            }
+        }
+
+       
         res.status(200).json({
             success: true,
-            message:"ok"
-        })
+            message: "Update processed successfully"
+        });
 
     } catch (error) {
         console.error('Error processing Telegram update:', error);
-        next(error);
+
+       
+        res.status(200).json({
+            success: false,
+            message: "Error processed successfully"
+        });
+
+        // Pass error to error handling middleware
+        // next(error);
     }
+}
 
+async function handleUserMessage(message: TelegramMessage) {
+    try {
+        const chatId = message.chat.id;
+        const username = message.chat.username || 'unknown_user';
+        const text = message.text;
 
+        console.log(`Processing message from ${username} (${chatId}): ${text}`);
 
+        if (text?.startsWith('/')) {
+            await handleUserCommand(chatId, text, username);
+        }
+    } catch (error) {
+        console.error('Error in handleUserMessage:', error);
+        throw error; // Re-throw to be caught by the main error handler
+    }
+}
+
+async function handleUserCommand(chatId: number, text: string, username: string) {
+    try {
+        const command = text.slice(1).toLowerCase();
+
+        console.log(`Processing command '${command}' from user ${username}`);
+
+        switch (command) {
+            case 'start':
+                const welcomeMessage = `Hello @${username}\n\n😸 Welcome to *Social Hunt*\n\n💥 Complete tasks\n\n🎁 Get Rewarded with Solana tokens`;
+                await sendMessageUser(chatId, welcomeMessage, {
+                    parse_mode: 'Markdown'
+                });
+                break;
+            default:
+                await sendMessageUser(chatId, "Unknown command. Type /start to begin.");
+        }
+    } catch (error) {
+        console.error(`Error handling command ${text} for user ${username}:`, error);
+        // Try to notify user of error
+        await sendMessageUser(chatId, "Sorry, there was an error processing your command. Please try again later.").catch(console.error);
+        throw error;
+    }
 }
 
 export async function usertaskSubmission(req: Request, res: Response, next: NextFunction) {
@@ -68,109 +146,19 @@ export async function usertaskSubmission(req: Request, res: Response, next: Next
             return res.status(400).json({ error: 'Chat ID is required.' });
         }
 
-
-        const user = await UserService.findUserByTelegramId(chatId)
-
+        const user = await UserService.findUserByTelegramId(chatId);
         if (!user) {
             return res.status(404).json({ error: 'User not found.' });
         }
-        await ProofService.deletePendingProof(user.id, chatId)
 
-
-        const submission = await ProofService.createProof(chatId, user.id, taskId, POINTS)
-
+        await ProofService.deletePendingProof(user.id, chatId);
+        const submission = await ProofService.createProof(chatId, user.id, taskId, POINTS);
 
         await sendMessageUser(chatId, `Successfully created submission\nID: ${submission.id}\nPlease upload your proof.`);
         return res.status(201).json({ submissionId: submission.id });
-
-
-
-
-
-    }
-    catch (error) {
-        console.error('Error processing Telegram update:', error);
+    } catch (error) {
+        console.error('Error in usertaskSubmission:', error);
         next(error);
     }
-
-}
-
-// Message handling
-async function handleUserMessage(message: TelegramMessage) {
-    const chatId = message.chat.id;
-    const username = message.chat.username;
-    const text = message.text;
-
-    if (text?.startsWith('/')) {
-        await handleUserCommand(chatId, text, username || 'user');
-    }
-}
-
-// Command handling
-const inlineKeyboard = {
-    inline_keyboard: [
-        // Row 1: Basic URL and callback buttons
-        [
-            { text: '🚀 Open App', url: "https://t.me/social_hunt_bot" },
-            { text: '📋 View Tasks', callback_data: 'view_tasks' }
-        ],
-        // Row 2: Login and user profile
-        [
-            {
-                text: '🔑 Login', login_url: {
-                    url: 'https://your-domain.com/login',
-                    forward_text: 'Login to Social Hunt',
-                    bot_username: 'social_hunt_bot'
-                }
-            },
-            {
-                text: '👤 My Profile', web_app: {
-                    url: 'https://your-domain.com/web-app'
-                }
-            }
-        ],
-        // Row 3: Share content and switch inline query
-        [
-            {
-                text: '📢 Share App',
-                switch_inline_query: 'Check out Social Hunt!'
-            },
-            {
-                text: '🔍 Search Tasks',
-                switch_inline_query_current_chat: 'task '
-            }
-        ],
-        // Row 4: Game and pay options
-        [
-            {
-                text: '🎮 Play Mini Game',
-                callback_game: {} // The game short name will be set by the Bot API
-            },
-        
-            {
-                text: '💰 Buy Tokens',
-                pay: true
-            }
-        ]
-    ]
-};
-
-async function handleUserCommand(chatId: number, text: string, username: string) {
-    const command = text.slice(1);
-    if (command === 'start') {
-        const welcomeMessage = `Hello @${username}
-        
-                                😸 Welcome to *Social Hunt*
-
-                                💥 Complete tasks
-
-                                🎁 Get Rewarded with Solana tokens`;
-
-        await sendMessageUser(chatId, welcomeMessage, {
-            parse_mode: 'MarkdownV2',
-            reply_markup: inlineKeyboard
-        });
-    } else {
-        await sendMessageUser(chatId, "Unknown command.");
-    }
+    
 }

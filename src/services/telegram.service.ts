@@ -96,29 +96,35 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
 
     }
 }
-export async function sendMessageUser(chatId: number, text: string, options = {}) {
+export async function sendMessageUser(chatId:number, text:string, options = {}) {
     try {
         if (!TELEGRAM_USER_API_URL) {
             throw new Error('TELEGRAM_USER_API_URL is not defined');
         }
 
-        const response = await axios.post(`${TELEGRAM_USER_API_URL}/sendMessage`, {
-            chat_id: chatId,
-            text,
-            ...options,
+        const response = await fetch(`${TELEGRAM_USER_API_URL}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text,
+                ...options,
+            }),
         });
-        return response.data;
+
+        if (!response.ok) {
+            throw new Error(`Error: ${response.statusText}`);
+        }
+
+        const data = await response.json();
+        return data;
     } catch (error) {
         console.error("SEND MESSAGE ERROR", error);
-        if (axios.isAxiosError(error)) {
-            console.error('Error sending message to Telegram:', error.response?.data || error.message);
-            if (error.code === 'ECONNABORTED') {
-                console.error('The request timed out');
-            }
-        }
-        throw error;
     }
 }
+
 export async function editMessageReplyMarkup(chatId: number, messageId: number) {
     try {
         const response = await axios.post(`${TELEGRAM_API_URL}/editMessageReplyMarkup`, {
@@ -151,7 +157,7 @@ export async function getImageUrl(fileId: string) {
     }
 
 }
-export async function getFilePath(fileId:string) {
+export async function getFilePath(fileId: string) {
     return await axios.post(`https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN}/getFile?file_id=${fileId}`);
 }
 
