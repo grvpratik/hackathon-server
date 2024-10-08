@@ -4,6 +4,7 @@ import { UserService } from "../services/user.service";
 import { ProofService } from "../services/proof.service";
 import { sendMessageUser } from "../services/telegram.service";
 import { getInitData } from "../middlewares/user.middleware";
+import { imageHandlerChat } from "../temp/image-handler";
 
 const POINTS = 200;
 

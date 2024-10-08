@@ -17,7 +17,6 @@ const tesseract_js_1 = require("tesseract.js");
 const axios_1 = __importDefault(require("axios"));
 const sharp_1 = __importDefault(require("sharp"));
 const crypto_1 = __importDefault(require("crypto"));
-const https_1 = __importDefault(require("https"));
 const types_1 = require("../types");
 const escapeMarkdown = (text) => {
     return text
@@ -58,7 +57,7 @@ const createImageBufferFromUrl = (imageUrl) => __awaiter(void 0, void 0, void 0,
     console.log("image buffer");
     const response = yield axios_1.default.get(imageUrl, {
         responseType: 'arraybuffer',
-        httpsAgent: new https_1.default.Agent({ rejectUnauthorized: true })
+        // httpsAgent: new https.Agent({ rejectUnauthorized: true })
     });
     return (0, sharp_1.default)(Buffer.from(response.data)).toBuffer();
 });
