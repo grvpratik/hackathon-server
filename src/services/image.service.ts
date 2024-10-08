@@ -7,10 +7,15 @@ import { UserService } from "./user.service";
 
 export const ImageService = {
     async processImage(imageUrl: string) {
-        const buffer = await createImageBufferFromUrl(imageUrl);
-        const { text, confidence } = await processImage(buffer);
-        const imageHash = await generateImageHash(buffer);
-        return { text, confidence, imageHash };
+        try {
+            const buffer = await createImageBufferFromUrl(imageUrl);
+            const { text, confidence } = await processImage(buffer);
+            const imageHash = await generateImageHash(buffer);
+            return { text, confidence, imageHash };
+        } catch (error) {
+            throw new Error("Error while image processing")
+        }
+
     }
     ,
     isValidImage(text: string, confidence: number): boolean {
@@ -48,9 +53,12 @@ export const ImageService = {
             if (!pending) {
                 await sendMessageUser(chatId, "No pending submission found. Please create a submission first.");
                 return;
-            }console.log({imageUrl})
+            } console.log({ imageUrl })
             const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
-
+            if (!text || !confidence) {
+                await sendMessageUser(chatId, `Error while processing image extraction`);
+                return;
+            }
             if (!ImageService.isValidImage(text, confidence)) {
                 await sendMessageUser(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%). Please try uploading a clearer image.`);
                 return;
