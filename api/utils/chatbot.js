@@ -55,6 +55,7 @@ const generateImageHash = (buffer) => __awaiter(void 0, void 0, void 0, function
 });
 exports.generateImageHash = generateImageHash;
 const createImageBufferFromUrl = (imageUrl) => __awaiter(void 0, void 0, void 0, function* () {
+    console.log("image buffer");
     const response = yield axios_1.default.get(imageUrl, {
         responseType: 'arraybuffer',
         httpsAgent: new https_1.default.Agent({ rejectUnauthorized: true })

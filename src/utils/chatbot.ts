@@ -43,7 +43,7 @@ export const generateImageHash = async (buffer: Buffer): Promise<string> => {
 };
 
 export const createImageBufferFromUrl = async (imageUrl: string): Promise<Buffer> => {
-
+console.log("image buffer")
     const response = await axios.get<ArrayBuffer>(imageUrl, {
         responseType: 'arraybuffer',
         httpsAgent: new https.Agent({ rejectUnauthorized: true })

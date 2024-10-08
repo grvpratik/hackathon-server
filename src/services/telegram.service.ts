@@ -96,24 +96,31 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
 
     }
 }
-export async function sendMessageUser(chatId: number, text: string, options = {}) {
+export async function sendMessageUser(chatId: number, text: string, options: Record<string, any> = {}) {
+    try {
+        const response = await fetch(`${TELEGRAM_USER_API_URL}/sendMessage`, {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json',
+            },
+            body: JSON.stringify({
+                chat_id: chatId,
+                text,
+                ...options,
+            }),
+        });
 
+        if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+        }
 
-    await fetch(`${TELEGRAM_USER_API_URL}/sendMessage`, {
-        method: 'POST',
-        headers: {
-            'Content-Type': 'application/json',
-        },
-        body: JSON.stringify({
-            chat_id: chatId,
-            text,
-            ...options,
-        }),
-    });
-
-
+        const result = await response.json();
+        console.log('Message sent successfully:', result);
+    } catch (error) {
+        console.error('Error sending message:', error);
+        throw error;
+    }
 }
-
 export async function editMessageReplyMarkup(chatId: number, messageId: number) {
     try {
         const response = await axios.post(`${TELEGRAM_API_URL}/editMessageReplyMarkup`, {

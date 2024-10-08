@@ -24,7 +24,7 @@ exports.ImageService = {
                 const buffer = yield (0, chatbot_1.createImageBufferFromUrl)(imageUrl);
                 const { text, confidence } = yield (0, chatbot_1.processImage)(buffer);
                 const imageHash = yield (0, chatbot_1.generateImageHash)(buffer);
-                console.log("process image end");
+                console.log({ text, confidence, imageHash });
                 return { text, confidence, imageHash };
             }
             catch (error) {
@@ -60,9 +60,10 @@ exports.ImageService = {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, "No pending submission found. Please create a submission first.");
                     return;
                 }
+                // await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
                 console.log({ imageUrl });
+                console.log("BEFORE PROCESSING IMAGE ");
                 const { text, confidence, imageHash } = yield exports.ImageService.processImage(imageUrl);
-                yield (0, telegram_service_1.sendReplyUser)(chatId, "Processing your image, please wait... 🔄");
                 if (!text || !confidence) {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, `Error while processing image extraction`);
                     return;
@@ -84,6 +85,7 @@ exports.ImageService = {
                 yield (0, telegram_service_1.sendMessageUser)(chatId, `Congratulations! Your submission was successful. 🎉\nYou've earned ${pending.amount} points!`);
             }
             catch (error) {
+                //@ts-ignore
                 console.error("Error in imageHandlerChat:", error);
                 yield (0, telegram_service_1.sendMessageUser)(chatId, "An unexpected error occurred while processing your image. Please try again later.");
             }

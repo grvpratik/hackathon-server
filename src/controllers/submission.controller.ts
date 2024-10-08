@@ -36,9 +36,9 @@ interface TelegramUpdate {
     callback_query?: any;
 }
 
+
 export async function handleVerifySubmission(req: Request, res: Response, next: NextFunction) {
     try {
-        
         // Validate request body
         if (!req.body || typeof req.body !== 'object') {
             console.error('Invalid request body received:', req.body);
@@ -65,54 +65,63 @@ export async function handleVerifySubmission(req: Request, res: Response, next: 
         const { message } = update;
 
         if (message) {
-            // Handle text messages
-            if (message.text) {
-                await handleUserMessage(message);
-            }
-
-            // Handle photo messages
-            if (message.photo && message.photo.length > 0 && message.chat.id) {
-                await ImageService.handleImage(message.chat.id, message.photo);
-            }
+            await handleMessage(message);
         }
 
-       
         res.status(200).json({
             success: true,
             message: "Update processed successfully"
         });
-
     } catch (error) {
         console.error('Error processing Telegram update:', error);
 
-       
-        res.status(200).json({
+
+        res.status(500).json({
             success: false,
-            message: "Error processed successfully"
+            message: error instanceof Error ? error.message : "An unknown error occurred"
         });
 
-        // Pass error to error handling middleware
+
+        // Optionally, pass the error to the next middleware
         // next(error);
     }
 }
 
-async function handleUserMessage(message: TelegramMessage) {
+
+async function handleMessage(message: TelegramMessage) {
     try {
         const chatId = message.chat.id;
         const username = message.chat.username || 'unknown_user';
-        const text = message.text;
 
-        console.log(`Processing message from ${username} (${chatId}): ${text}`);
+        console.log(`Processing message from ${username} (${chatId})`);
 
-        if (text?.startsWith('/')) {
-            await handleUserCommand(chatId, text, username);
+        if (message.text) {
+            if (message.text.startsWith('/')) {
+                await handleUserCommand(chatId, message.text, username);
+            } else {
+                await handleUserText(chatId, message.text, username);
+            }
+        } else if (message.photo && message.photo.length > 0) {
+            await ImageService.handleImage(chatId, message.photo);
+        } else {
+            await sendMessageUser(chatId, "Sorry, I can only process text messages and photos at the moment.");
         }
     } catch (error) {
-        console.error('Error in handleUserMessage:', error);
+        console.error('Error in handleMessage:', error);
         throw error; // Re-throw to be caught by the main error handler
     }
 }
-
+async function handleUserText(chatId: number, text: string, username: string) {
+    try {
+        console.log(`Processing text message '${text}' from user ${username}`);
+        // Add your logic for handling non-command text messages here
+        await sendMessageUser(chatId, `Thank you for your message: "${text}"`);
+    } catch (error) {
+        console.error(`Error handling text message "${text}" for user ${username}:`, error);
+        await sendMessageUser(chatId, "Sorry, there was an error processing your message. Please try again later.").catch(console.error);
+        throw error;
+    }
+}
 async function handleUserCommand(chatId: number, text: string, username: string) {
     try {
         const command = text.slice(1).toLowerCase();
@@ -131,11 +140,11 @@ async function handleUserCommand(chatId: number, text: string, username: string)
         }
     } catch (error) {
         console.error(`Error handling command ${text} for user ${username}:`, error);
-        // Try to notify user of error
         await sendMessageUser(chatId, "Sorry, there was an error processing your command. Please try again later.").catch(console.error);
         throw error;
     }
 }
+
 
 export async function usertaskSubmission(req: Request, res: Response, next: NextFunction) {
     const taskId = req.params.taskId;
@@ -161,5 +170,5 @@ export async function usertaskSubmission(req: Request, res: Response, next: Next
         console.error('Error in usertaskSubmission:', error);
         next(error);
     }
-    
+
 }

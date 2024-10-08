@@ -134,13 +134,24 @@ function sendMessage(chatId_1, text_1) {
 }
 function sendMessageUser(chatId_1, text_1) {
     return __awaiter(this, arguments, void 0, function* (chatId, text, options = {}) {
-        yield fetch(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, {
-            method: 'POST',
-            headers: {
-                'Content-Type': 'application/json',
-            },
-            body: JSON.stringify(Object.assign({ chat_id: chatId, text }, options)),
-        });
+        try {
+            const response = yield fetch(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(Object.assign({ chat_id: chatId, text }, options)),
+            });
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+            const result = yield response.json();
+            console.log('Message sent successfully:', result);
+        }
+        catch (error) {
+            console.error('Error sending message:', error);
+            throw error;
+        }
     });
 }
 function editMessageReplyMarkup(chatId, messageId) {

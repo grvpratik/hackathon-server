@@ -12,7 +12,8 @@ export const ImageService = {
             const buffer = await createImageBufferFromUrl(imageUrl);
             const { text, confidence } = await processImage(buffer);
             const imageHash = await generateImageHash(buffer);
-            console.log("process image end")
+         
+            console.log({ text, confidence, imageHash })
             return { text, confidence, imageHash };
         } catch (error) {
             throw new Error("Error while image processing")
@@ -41,7 +42,7 @@ export const ImageService = {
             }
 
             // Notify the user that the image is being processed. LOOPED
-           
+
 
             const user = await UserService.findUserByTelegramId(chatId);
 
@@ -56,10 +57,11 @@ export const ImageService = {
                 await sendMessageUser(chatId, "No pending submission found. Please create a submission first.");
                 return;
             }
-
+   // await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
             console.log({ imageUrl });
+            console.log("BEFORE PROCESSING IMAGE ")
             const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
- await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
+         
             if (!text || !confidence) {
                 await sendMessageUser(chatId, `Error while processing image extraction`);
                 return;
@@ -85,6 +87,7 @@ export const ImageService = {
             console.log("Transaction result:", result);
             await sendMessageUser(chatId, `Congratulations! Your submission was successful. 🎉\nYou've earned ${pending.amount} points!`);
         } catch (error) {
+            //@ts-ignore
             console.error("Error in imageHandlerChat:", error);
             await sendMessageUser(chatId, "An unexpected error occurred while processing your image. Please try again later.");
         }

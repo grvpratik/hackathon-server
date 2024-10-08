@@ -41,14 +41,7 @@ function handleVerifySubmission(req, res, next) {
             }
             const { message } = update;
             if (message) {
-                // Handle text messages
-                if (message.text) {
-                    yield handleUserMessage(message);
-                }
-                // Handle photo messages
-                if (message.photo && message.photo.length > 0 && message.chat.id) {
-                    yield image_service_1.ImageService.handleImage(message.chat.id, message.photo);
-                }
+                yield handleMessage(message);
             }
             res.status(200).json({
                 success: true,
@@ -57,29 +50,53 @@ function handleVerifySubmission(req, res, next) {
         }
         catch (error) {
             console.error('Error processing Telegram update:', error);
-            res.status(200).json({
+            res.status(500).json({
                 success: false,
-                message: "Error processed successfully"
+                message: error instanceof Error ? error.message : "An unknown error occurred"
             });
-            // Pass error to error handling middleware
+            // Optionally, pass the error to the next middleware
             // next(error);
         }
     });
 }
-function handleUserMessage(message) {
+function handleMessage(message) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             const chatId = message.chat.id;
             const username = message.chat.username || 'unknown_user';
-            const text = message.text;
-            console.log(`Processing message from ${username} (${chatId}): ${text}`);
-            if (text === null || text === void 0 ? void 0 : text.startsWith('/')) {
-                yield handleUserCommand(chatId, text, username);
+            console.log(`Processing message from ${username} (${chatId})`);
+            if (message.text) {
+                if (message.text.startsWith('/')) {
+                    yield handleUserCommand(chatId, message.text, username);
+                }
+                else {
+                    yield handleUserText(chatId, message.text, username);
+                }
+            }
+            else if (message.photo && message.photo.length > 0) {
+                yield image_service_1.ImageService.handleImage(chatId, message.photo);
+            }
+            else {
+                yield (0, telegram_service_1.sendMessageUser)(chatId, "Sorry, I can only process text messages and photos at the moment.");
             }
         }
         catch (error) {
-            console.error('Error in handleUserMessage:', error);
+            console.error('Error in handleMessage:', error);
             throw error; // Re-throw to be caught by the main error handler
+        }
+    });
+}
+function handleUserText(chatId, text, username) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            console.log(`Processing text message '${text}' from user ${username}`);
+            // Add your logic for handling non-command text messages here
+            yield (0, telegram_service_1.sendMessageUser)(chatId, `Thank you for your message: "${text}"`);
+        }
+        catch (error) {
+            console.error(`Error handling text message "${text}" for user ${username}:`, error);
+            yield (0, telegram_service_1.sendMessageUser)(chatId, "Sorry, there was an error processing your message. Please try again later.").catch(console.error);
+            throw error;
         }
     });
 }
@@ -101,7 +118,6 @@ function handleUserCommand(chatId, text, username) {
         }
         catch (error) {
             console.error(`Error handling command ${text} for user ${username}:`, error);
-            // Try to notify user of error
             yield (0, telegram_service_1.sendMessageUser)(chatId, "Sorry, there was an error processing your command. Please try again later.").catch(console.error);
             throw error;
         }
