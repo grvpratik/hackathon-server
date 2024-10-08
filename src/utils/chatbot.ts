@@ -1,4 +1,4 @@
-import Tesseract from "tesseract.js";
+import { createWorker } from "tesseract.js";
 import axios from "axios";
 import sharp from "sharp";
 import crypto from 'crypto';
@@ -53,10 +53,11 @@ export const createImageBufferFromUrl = async (imageUrl: string): Promise<Buffer
 };
 
 export const processImage = async (buffer: Buffer): Promise<{ text: string; confidence: number }> => {
-    const worker =await Tesseract.createWorker(config.TESSERACT_LANG);
+    console.log("inside image process")
+    const worker =await createWorker(config.TESSERACT_LANG);
     try {
         const grayscaleBuffer = await convertToGrayscale(buffer);
-        const { data } = await Tesseract.recognize(grayscaleBuffer);
+        const { data } = await worker.recognize(grayscaleBuffer);
         return { text: data.text, confidence: data.confidence };
     } finally {
         await worker.terminate();

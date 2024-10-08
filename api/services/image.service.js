@@ -20,9 +20,11 @@ exports.ImageService = {
     processImage(imageUrl) {
         return __awaiter(this, void 0, void 0, function* () {
             try {
+                console.log("process image start");
                 const buffer = yield (0, chatbot_1.createImageBufferFromUrl)(imageUrl);
                 const { text, confidence } = yield (0, chatbot_1.processImage)(buffer);
                 const imageHash = yield (0, chatbot_1.generateImageHash)(buffer);
+                console.log("process image end");
                 return { text, confidence, imageHash };
             }
             catch (error) {
@@ -47,8 +49,7 @@ exports.ImageService = {
                 if (!imageUrl) {
                     throw new Error("Failed to get image URL");
                 }
-                // Notify the user that the image is being processed.
-                yield (0, telegram_service_1.sendReplyUser)(chatId, "Processing your image, please wait... 🔄");
+                // Notify the user that the image is being processed. LOOPED
                 const user = yield user_service_1.UserService.findUserByTelegramId(chatId);
                 if (!user) {
                     yield (0, telegram_service_1.sendReplyUser)(chatId, "User not found. Please open the app first to create your account.");
@@ -61,6 +62,7 @@ exports.ImageService = {
                 }
                 console.log({ imageUrl });
                 const { text, confidence, imageHash } = yield exports.ImageService.processImage(imageUrl);
+                yield (0, telegram_service_1.sendReplyUser)(chatId, "Processing your image, please wait... 🔄");
                 if (!text || !confidence) {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, `Error while processing image extraction`);
                     return;

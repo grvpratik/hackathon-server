@@ -13,7 +13,7 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.isValidProof = exports.processImage = exports.createImageBufferFromUrl = exports.generateImageHash = exports.convertToGrayscale = exports.escapeMarkdown = void 0;
-const tesseract_js_1 = __importDefault(require("tesseract.js"));
+const tesseract_js_1 = require("tesseract.js");
 const axios_1 = __importDefault(require("axios"));
 const sharp_1 = __importDefault(require("sharp"));
 const crypto_1 = __importDefault(require("crypto"));
@@ -63,10 +63,11 @@ const createImageBufferFromUrl = (imageUrl) => __awaiter(void 0, void 0, void 0,
 });
 exports.createImageBufferFromUrl = createImageBufferFromUrl;
 const processImage = (buffer) => __awaiter(void 0, void 0, void 0, function* () {
-    const worker = yield tesseract_js_1.default.createWorker(types_1.config.TESSERACT_LANG);
+    console.log("inside image process");
+    const worker = yield (0, tesseract_js_1.createWorker)(types_1.config.TESSERACT_LANG);
     try {
         const grayscaleBuffer = yield (0, exports.convertToGrayscale)(buffer);
-        const { data } = yield tesseract_js_1.default.recognize(grayscaleBuffer);
+        const { data } = yield worker.recognize(grayscaleBuffer);
         return { text: data.text, confidence: data.confidence };
     }
     finally {

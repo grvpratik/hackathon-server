@@ -8,9 +8,11 @@ import { UserService } from "./user.service";
 export const ImageService = {
     async processImage(imageUrl: string) {
         try {
+            console.log("process image start")
             const buffer = await createImageBufferFromUrl(imageUrl);
             const { text, confidence } = await processImage(buffer);
             const imageHash = await generateImageHash(buffer);
+            console.log("process image end")
             return { text, confidence, imageHash };
         } catch (error) {
             throw new Error("Error while image processing")
@@ -38,8 +40,8 @@ export const ImageService = {
                 throw new Error("Failed to get image URL");
             }
 
-            // Notify the user that the image is being processed.
-            await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
+            // Notify the user that the image is being processed. LOOPED
+           
 
             const user = await UserService.findUserByTelegramId(chatId);
 
@@ -57,7 +59,7 @@ export const ImageService = {
 
             console.log({ imageUrl });
             const { text, confidence, imageHash } = await ImageService.processImage(imageUrl);
-
+ await sendReplyUser(chatId, "Processing your image, please wait... 🔄");
             if (!text || !confidence) {
                 await sendMessageUser(chatId, `Error while processing image extraction`);
                 return;
