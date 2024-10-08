@@ -96,7 +96,7 @@ export async function sendMessage(chatId: number, text: string, options = {}) {
 
     }
 }
-export async function sendMessageUser(chatId:number, text:string, options = {}) {
+export async function sendMessageUser(chatId: number, text: string, options = {}) {
     try {
         if (!TELEGRAM_USER_API_URL) {
             throw new Error('TELEGRAM_USER_API_URL is not defined');
@@ -163,4 +163,13 @@ export async function getFilePath(fileId: string) {
 
 export async function getFileUrl(filePath: string) {
     return `https://api.telegram.org/file/bot${TELEGRAM_BOT_USER_TOKEN}/${filePath}`
+}
+
+const TELEGRAM_API = `https://api.telegram.org/bot${TELEGRAM_BOT_USER_TOKEN}`;
+
+export async function sendReplyUser(chatId: string, responseText: string) {
+    return await axios.post(`${TELEGRAM_API}/sendMessage`, {
+        chat_id: chatId,
+        text: responseText
+    });
 }

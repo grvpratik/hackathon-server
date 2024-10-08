@@ -38,6 +38,7 @@ interface TelegramUpdate {
 
 export async function handleVerifySubmission(req: Request, res: Response, next: NextFunction) {
     try {
+        
         // Validate request body
         if (!req.body || typeof req.body !== 'object') {
             console.error('Invalid request body received:', req.body);

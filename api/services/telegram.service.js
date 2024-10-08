@@ -133,23 +133,25 @@ function sendMessage(chatId_1, text_1) {
 }
 function sendMessageUser(chatId_1, text_1) {
     return __awaiter(this, arguments, void 0, function* (chatId, text, options = {}) {
-        var _a;
         try {
             if (!constant_1.TELEGRAM_USER_API_URL) {
                 throw new Error('TELEGRAM_USER_API_URL is not defined');
             }
-            const response = yield axios_1.default.post(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, Object.assign({ chat_id: chatId, text }, options));
-            return response.data;
+            const response = yield fetch(`${constant_1.TELEGRAM_USER_API_URL}/sendMessage`, {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(Object.assign({ chat_id: chatId, text }, options)),
+            });
+            if (!response.ok) {
+                throw new Error(`Error: ${response.statusText}`);
+            }
+            const data = yield response.json();
+            return data;
         }
         catch (error) {
             console.error("SEND MESSAGE ERROR", error);
-            if (axios_1.default.isAxiosError(error)) {
-                console.error('Error sending message to Telegram:', ((_a = error.response) === null || _a === void 0 ? void 0 : _a.data) || error.message);
-                if (error.code === 'ECONNABORTED') {
-                    console.error('The request timed out');
-                }
-            }
-            throw error;
         }
     });
 }

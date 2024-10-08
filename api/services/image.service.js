@@ -19,10 +19,15 @@ const user_service_1 = require("./user.service");
 exports.ImageService = {
     processImage(imageUrl) {
         return __awaiter(this, void 0, void 0, function* () {
-            const buffer = yield (0, chatbot_1.createImageBufferFromUrl)(imageUrl);
-            const { text, confidence } = yield (0, chatbot_1.processImage)(buffer);
-            const imageHash = yield (0, chatbot_1.generateImageHash)(buffer);
-            return { text, confidence, imageHash };
+            try {
+                const buffer = yield (0, chatbot_1.createImageBufferFromUrl)(imageUrl);
+                const { text, confidence } = yield (0, chatbot_1.processImage)(buffer);
+                const imageHash = yield (0, chatbot_1.generateImageHash)(buffer);
+                return { text, confidence, imageHash };
+            }
+            catch (error) {
+                throw new Error("Error while image processing");
+            }
         });
     },
     isValidImage(text, confidence) {
@@ -36,13 +41,13 @@ exports.ImageService = {
                 yield (0, telegram_service_1.sendMessageUser)(chatId, "Invalid request. Please try again with a valid image.");
                 return;
             }
-            yield (0, telegram_service_1.sendMessageUser)(chatId, "Processing your image, please wait... 🔄");
             try {
                 const fileId = photos[photos.length - 1].file_id;
                 const imageUrl = yield (0, telegram_service_1.getImageUrl)(fileId);
                 if (!imageUrl) {
                     throw new Error("Failed to get image URL");
                 }
+                yield (0, telegram_service_1.sendMessageUser)(chatId, "Processing your image, please wait... 🔄");
                 const user = yield user_service_1.UserService.findUserByTelegramId(chatId);
                 if (!user) {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, "User not found. Please open the app first to create your account.");
@@ -53,7 +58,12 @@ exports.ImageService = {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, "No pending submission found. Please create a submission first.");
                     return;
                 }
+                console.log({ imageUrl });
                 const { text, confidence, imageHash } = yield exports.ImageService.processImage(imageUrl);
+                if (!text || !confidence) {
+                    yield (0, telegram_service_1.sendMessageUser)(chatId, `Error while processing image extraction`);
+                    return;
+                }
                 if (!exports.ImageService.isValidImage(text, confidence)) {
                     yield (0, telegram_service_1.sendMessageUser)(chatId, `Unable to extract text with sufficient confidence (${confidence.toFixed(2)}%). Please try uploading a clearer image.`);
                     return;

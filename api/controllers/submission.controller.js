@@ -20,22 +20,90 @@ const POINTS = 200;
 function handleVerifySubmission(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
-            const body = req.body;
-            console.log('Received Telegram update:', JSON.stringify(body, null, 2));
-            const { message } = body;
-            if (message && message.chat && message.text) {
-                yield handleUserMessage(message);
+            // Validate request body
+            if (!req.body || typeof req.body !== 'object') {
+                console.error('Invalid request body received:', req.body);
+                return res.status(400).json({
+                    success: false,
+                    message: "Invalid request body"
+                });
             }
-            // if (callback_query) {
-            //     await handleCallbackQuery(callback_query);
-            // }
-            if (message.photo && message.chat.id) {
-                image_service_1.ImageService.handleImage(message.chat.id, message.photo);
+            const update = req.body;
+            // Enhanced logging
+            console.log('Received Telegram update:', JSON.stringify(update, null, 2));
+            // Verify update_id exists
+            if (!update.update_id) {
+                console.warn('Received update without update_id:', update);
+                return res.status(400).json({
+                    success: false,
+                    message: "Missing update_id"
+                });
             }
+            const { message } = update;
+            if (message) {
+                // Handle text messages
+                if (message.text) {
+                    yield handleUserMessage(message);
+                }
+                // Handle photo messages
+                if (message.photo && message.photo.length > 0 && message.chat.id) {
+                    yield image_service_1.ImageService.handleImage(message.chat.id, message.photo);
+                }
+            }
+            res.status(200).json({
+                success: true,
+                message: "Update processed successfully"
+            });
         }
         catch (error) {
             console.error('Error processing Telegram update:', error);
-            next(error);
+            res.status(200).json({
+                success: false,
+                message: "Error processed successfully"
+            });
+            // Pass error to error handling middleware
+            // next(error);
+        }
+    });
+}
+function handleUserMessage(message) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const chatId = message.chat.id;
+            const username = message.chat.username || 'unknown_user';
+            const text = message.text;
+            console.log(`Processing message from ${username} (${chatId}): ${text}`);
+            if (text === null || text === void 0 ? void 0 : text.startsWith('/')) {
+                yield handleUserCommand(chatId, text, username);
+            }
+        }
+        catch (error) {
+            console.error('Error in handleUserMessage:', error);
+            throw error; // Re-throw to be caught by the main error handler
+        }
+    });
+}
+function handleUserCommand(chatId, text, username) {
+    return __awaiter(this, void 0, void 0, function* () {
+        try {
+            const command = text.slice(1).toLowerCase();
+            console.log(`Processing command '${command}' from user ${username}`);
+            switch (command) {
+                case 'start':
+                    const welcomeMessage = `Hello @${username}\n\n😸 Welcome to *Social Hunt*\n\n💥 Complete tasks\n\n🎁 Get Rewarded with Solana tokens`;
+                    yield (0, telegram_service_1.sendMessageUser)(chatId, welcomeMessage, {
+                        parse_mode: 'Markdown'
+                    });
+                    break;
+                default:
+                    yield (0, telegram_service_1.sendMessageUser)(chatId, "Unknown command. Type /start to begin.");
+            }
+        }
+        catch (error) {
+            console.error(`Error handling command ${text} for user ${username}:`, error);
+            // Try to notify user of error
+            yield (0, telegram_service_1.sendMessageUser)(chatId, "Sorry, there was an error processing your command. Please try again later.").catch(console.error);
+            throw error;
         }
     });
 }
@@ -59,87 +127,8 @@ function usertaskSubmission(req, res, next) {
             return res.status(201).json({ submissionId: submission.id });
         }
         catch (error) {
-            console.error('Error processing Telegram update:', error);
+            console.error('Error in usertaskSubmission:', error);
             next(error);
-        }
-    });
-}
-// Message handling
-function handleUserMessage(message) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const chatId = message.chat.id;
-        const username = message.chat.username;
-        const text = message.text;
-        if (text === null || text === void 0 ? void 0 : text.startsWith('/')) {
-            yield handleUserCommand(chatId, text, username || 'user');
-        }
-    });
-}
-// Command handling
-const inlineKeyboard = {
-    inline_keyboard: [
-        // Row 1: Basic URL and callback buttons
-        [
-            { text: '🚀 Open App', url: "https://t.me/social_hunt_bot" },
-            { text: '📋 View Tasks', callback_data: 'view_tasks' }
-        ],
-        // Row 2: Login and user profile
-        [
-            {
-                text: '🔑 Login', login_url: {
-                    url: 'https://your-domain.com/login',
-                    forward_text: 'Login to Social Hunt',
-                    bot_username: 'social_hunt_bot'
-                }
-            },
-            {
-                text: '👤 My Profile', web_app: {
-                    url: 'https://your-domain.com/web-app'
-                }
-            }
-        ],
-        // Row 3: Share content and switch inline query
-        [
-            {
-                text: '📢 Share App',
-                switch_inline_query: 'Check out Social Hunt!'
-            },
-            {
-                text: '🔍 Search Tasks',
-                switch_inline_query_current_chat: 'task '
-            }
-        ],
-        // Row 4: Game and pay options
-        [
-            {
-                text: '🎮 Play Mini Game',
-                callback_game: {} // The game short name will be set by the Bot API
-            },
-            {
-                text: '💰 Buy Tokens',
-                pay: true
-            }
-        ]
-    ]
-};
-function handleUserCommand(chatId, text, username) {
-    return __awaiter(this, void 0, void 0, function* () {
-        const command = text.slice(1);
-        if (command === 'start') {
-            const welcomeMessage = `Hello @${username}
-        
-                                😸 Welcome to *Social Hunt*
-
-                                💥 Complete tasks
-
-                                🎁 Get Rewarded with Solana tokens`;
-            yield (0, telegram_service_1.sendMessageUser)(chatId, welcomeMessage, {
-                parse_mode: 'MarkdownV2',
-                reply_markup: inlineKeyboard
-            });
-        }
-        else {
-            yield (0, telegram_service_1.sendMessageUser)(chatId, "Unknown command.");
         }
     });
 }
