@@ -297,15 +297,15 @@ function startDungeonRaid(req, res) {
             if (!user.gameAccount) {
                 return res.status(400).json({ success: false, error: "Game account not found" });
             }
-            const exRaid = yield __1.prisma.dungeonRaid.findFirst({
-                where: {
-                    dungeonId: dungeonId,
-                    gameId: user === null || user === void 0 ? void 0 : user.gameAccount.id
-                }
-            });
-            if (exRaid) {
-                return res.status(400).json({ success: false, error: "raid already created" });
-            }
+            // const exRaid = await prisma.dungeonRaid.findFirst({
+            //     where: {
+            //         dungeonId: dungeonId,
+            //         gameId: user?.gameAccount.id
+            //     }
+            // })
+            // if (exRaid) {
+            //     return res.status(400).json({ success: false, error: "raid already created" });
+            // }
             const dungeon = yield __1.prisma.dungeon.findUnique({
                 where: { id: dungeonId }
             });
