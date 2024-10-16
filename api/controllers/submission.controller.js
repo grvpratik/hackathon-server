@@ -21,24 +21,9 @@ function handleVerifySubmission(req, res, next) {
     return __awaiter(this, void 0, void 0, function* () {
         try {
             // Validate request body
-            if (!req.body || typeof req.body !== 'object') {
-                console.error('Invalid request body received:', req.body);
-                return res.status(400).json({
-                    success: false,
-                    message: "Invalid request body"
-                });
-            }
             const update = req.body;
             // Enhanced logging
             console.log('Received Telegram update:', JSON.stringify(update, null, 2));
-            // Verify update_id exists
-            if (!update.update_id) {
-                console.warn('Received update without update_id:', update);
-                return res.status(400).json({
-                    success: false,
-                    message: "Missing update_id"
-                });
-            }
             const { message } = update;
             if (message) {
                 yield handleMessage(message);
