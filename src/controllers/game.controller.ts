@@ -203,19 +203,19 @@ class RewardSystem {
         if (luck < normalizedDiamondThreshold) {
             rewardTier = RewardName.diamond;
             tokenAmount = dungeon.diamondReward.tokenAmount;
-            exp = 200; // High exp for diamond reward
+            exp = 200;
         } else if (luck < normalizedGoldThreshold) {
             rewardTier = RewardName.gold;
             tokenAmount = dungeon.goldReward.tokenAmount;
-            exp = 150; // High exp for gold reward
+            exp = 150;
         } else if (luck < normalizedSilverThreshold) {
             rewardTier = RewardName.silver;
             tokenAmount = dungeon.silverReward.tokenAmount;
-            exp = 100; // Medium exp for silver reward
+            exp = 100;
         } else {
             rewardTier = RewardName.base;
             tokenAmount = dungeon.baseReward.tokenAmount;
-            exp = 50; // Base exp
+            exp = 250;
         }
 
         return { rewardTier, tokenAmount, exp };
@@ -566,7 +566,7 @@ export async function claimDungeonReward(req: Request, res: Response) {
                     where: { id: raid.gameId },
                     data: {
                         knight_lvl: resetUnitForLegendary(gameAccount.knight_lvl!),
-                        knight_exp: 0,// Assuming knight_exp is the main experience field
+                        knight_exp: 0,
                         beast_lvl: resetUnitForLegendary(gameAccount.beast_lvl!),
                         beast_exp: 0,
                         mage_lvl: resetUnitForLegendary(gameAccount.mage_lvl!),
@@ -575,7 +575,8 @@ export async function claimDungeonReward(req: Request, res: Response) {
                 })
             ]);
         }
-
+        console.log({ rewardResult })
+        console.log({ updatedGameData })
         res.status(200).json({ rewardResult })
 
     } catch (error) {
