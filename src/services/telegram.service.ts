@@ -111,14 +111,14 @@ export async function sendMessageUser(chatId: number, text: string, options: Rec
         });
 
         if (!response.ok) {
-            throw new Error(`HTTP error! status: ${response.status}`);
+           console.log(`HTTP error! status: ${response.status}`);
         }
 
         const result = await response.json();
         console.log('Message sent successfully:', result);
     } catch (error) {
         console.error('Error sending message:', error);
-        throw error;
+    
     }
 }
 export async function editMessageReplyMarkup(chatId: number, messageId: number) {

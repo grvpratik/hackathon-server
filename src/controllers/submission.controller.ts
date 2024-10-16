@@ -55,9 +55,9 @@ export async function handleVerifySubmission(req: Request, res: Response, next: 
             await handleMessage(message);
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
-            message: "Update processed successfully"
+            message: "verify route"
         });
     } catch (error) {
         console.error('Error processing Telegram update:', error);
@@ -95,7 +95,7 @@ async function handleMessage(message: TelegramMessage) {
         }
     } catch (error) {
         console.error('Error in handleMessage:', error);
-        throw error; // Re-throw to be caught by the main error handler
+        
     }
 }
 async function handleUserText(chatId: number, text: string, username: string) {
@@ -128,7 +128,7 @@ async function handleUserCommand(chatId: number, text: string, username: string)
     } catch (error) {
         console.error(`Error handling command ${text} for user ${username}:`, error);
         await sendMessageUser(chatId, "Sorry, there was an error processing your command. Please try again later.").catch(console.error);
-        throw error;
+       
     }
 }
 

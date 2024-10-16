@@ -38,7 +38,8 @@ export const ImageService = {
             const imageUrl = await getImageUrl(fileId);
 
             if (!imageUrl) {
-                throw new Error("Failed to get image URL");
+                console.log("Failed to get image URL");
+                return
             }
 
             // Notify the user that the image is being processed. LOOPED

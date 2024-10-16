@@ -19,7 +19,7 @@ import { createTask, getTasksForPayer } from '../services/task.service';
 
 const userStates: Map<number, UserState> = new Map();
 
-export async function handleCreateRequest(req: Request, res: Response,next:NextFunction) {
+export async function handleCreateRequest(req: Request, res: Response, next: NextFunction) {
     try {
         const { message, callback_query } = req.body;
 
@@ -31,12 +31,12 @@ export async function handleCreateRequest(req: Request, res: Response,next:NextF
             await handleCallbackQuery(callback_query);
         }
 
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Update processed successfully"
         });
     } catch (error) {
-        res.status(200).json({
+        return res.status(200).json({
             success: true,
             message: "Update processed successfully"
         });
@@ -104,7 +104,7 @@ async function handleCallbackQuery(callback_query: any) {
     } else if (data.includes('_')) {
         await handleActionSelection(chatId, data);
     } else if (data === 'confirm' || data === 'cancel') {
-        await handleConfirmation(chatId, data, callback_query.message.chat,first_name,last_name);
+        await handleConfirmation(chatId, data, callback_query.message.chat, first_name, last_name);
     }
 }
 
@@ -147,7 +147,7 @@ async function handleActionSelection(chatId: number, data: any) {
         await sendMessage(chatId, `Please enter the URL for ${platform} ${action}:`);
     }
 }
-async function handleConfirmation(chatId: number, data: any, chat: any,first_name:string,last_name:string) {
+async function handleConfirmation(chatId: number, data: any, chat: any, first_name: string, last_name: string) {
     const userState = userStates.get(chatId);
     if (userState && userState.state === State.CONFIRMATION) {
         if (data === 'confirm') {
@@ -174,7 +174,7 @@ async function handleConfirmation(chatId: number, data: any, chat: any,first_nam
                 }
             } catch (error) {
                 await sendMessage(chatId, "Order Creation failed!")
-               
+
             }
 
 
@@ -188,16 +188,16 @@ async function handleConfirmation(chatId: number, data: any, chat: any,first_nam
     }
 }
 
-async function handleListCommand(chatId:number) {
+async function handleListCommand(chatId: number) {
     await sendMessage(chatId, "Here are the list of Tasks: ");
-    const userFound =await checkPayerFound(chatId)
+    const userFound = await checkPayerFound(chatId)
     if (!userFound) {
         await sendMessage(chatId, "User not found. ❌ ");
         return
     }
     const taskList = await getTasksForPayer(userFound.id)
     if (!taskList) {
-         await sendMessage(chatId, "Task not found. ❌ ");
+        await sendMessage(chatId, "Task not found. ❌ ");
         return
     }
     taskList.map(async (x) => {
@@ -240,7 +240,7 @@ async function handleUserConfirmation(
         const endDate = new Date()
         const task = await createTask(payerId, platform, taskName, amount, signature, taskLink, endDate, comment);
         console.log('Task created on user confirmation:', task);
-        const token = await createPaymentToken(payerId, task.id,amount)
+        const token = await createPaymentToken(payerId, task.id, amount)
         return { task, token };
     } catch (error) {
         console.error('Error handling user confirmation:', error);
